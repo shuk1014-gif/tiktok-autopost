@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薬剤師求人マッチングツール (PoC)</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --primary: #2c7be5;
+    --primary-dark: #1a5fc4;
+    --text: #2d3748;
+    --muted: #718096;
+    --border: #e2e8f0;
+    --success: #38a169;
+    --warn: #d69e2e;
+    --danger: #e53e3e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #2c7be5, #1a5fc4);
+    color: white;
+    padding: 24px 32px;
+  }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; opacity: 0.9; font-size: 13px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  section.card {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  section.card h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: bold;
+  }
+  input[type=text], input[type=password], input[type=number], textarea, select {
+    font: inherit;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+  }
+  textarea { resize: vertical; min-height: 100px; }
+  button {
+    font: inherit;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  button:hover:not(:disabled) { background: var(--primary-dark); }
+  button:disabled { background: #cbd5e0; cursor: not-allowed; }
+  button.secondary { background: #edf2f7; color: var(--text); }
+  button.secondary:hover:not(:disabled) { background: #e2e8f0; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row > * { flex: 0 0 auto; }
+  .row > input[type=text], .row > input[type=password] { flex: 1 1 200px; }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .chip-input {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px;
+    min-height: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    cursor: text;
+    background: white;
+  }
+  .chip {
+    background: #ebf4ff;
+    color: var(--primary-dark);
+    padding: 3px 8px 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .chip.must { background: #fed7d7; color: #c53030; }
+  .chip.nice { background: #c6f6d5; color: #276749; }
+  .chip.deal { background: #2d3748; color: white; }
+  .chip button {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .chip-input input {
+    border: none;
+    outline: none;
+    flex: 1;
+    min-width: 80px;
+    padding: 2px;
+  }
+  .note {
+    background: #fffaf0;
+    border-left: 3px solid var(--warn);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #744210;
+    margin: 8px 0;
+    border-radius: 2px;
+  }
+  .status { font-size: 12px; color: var(--muted); padding: 6px 0; }
+  .status.error { color: var(--danger); }
+  .status.success { color: var(--success); }
+  .job-list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .job-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    position: relative;
+  }
+  .job-rank {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  }
+  .job-rank.top { background: var(--success); }
+  .job-title { font-weight: 600; margin: 0 0 6px; font-size: 15px; }
+  .job-company { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .job-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-bottom: 6px; }
+  .job-meta span::before { content: "・"; color: var(--border); margin-right: 4px; }
+  .job-meta span:first-child::before { content: ""; margin: 0; }
+  .job-features { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+  .feat { font-size: 11px; padding: 2px 7px; border-radius: 10px; background: #edf2f7; color: var(--muted); }
+  .feat.match { background: #c6f6d5; color: #276749; }
+  .feat.miss { background: #fed7d7; color: #c53030; }
+  .score-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .score-bar {
+    flex: 1;
+    height: 6px;
+    background: #edf2f7;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-fill { height: 100%; background: linear-gradient(90deg, #38a169, #2c7be5); border-radius: 3px; }
+  .score-num { font-weight: 600; font-size: 13px; color: var(--primary-dark); min-width: 36px; text-align: right; }
+  .reasons { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+  details.api-config { font-size: 13px; }
+  details.api-config summary { cursor: pointer; color: var(--muted); }
+  .hide { display: none !important; }
+  .stats {
+    display: flex;
+    gap: 16px;
+    background: #ebf4ff;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .stats strong { color: var(--primary-dark); }
+  .tab-row { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .tab-btn { background: none; color: var(--muted); border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 14px; }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+  .small { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>薬剤師求人マッチングツール</h1>
+  <p>面談の音声・メモから希望条件を抽出し、サンプル求人50件からマッチング上位30件を表示する PoC</p>
+</header>
+<main>
+
+<!-- 1. API設定 -->
+<section class="card">
+  <h2><span class="step-num">1</span>OpenAI API キー</h2>
+  <div class="row">
+    <input type="password" id="apiKey" placeholder="sk-... (Whisper と GPT で使用)">
+    <button id="saveKey" class="secondary">保存</button>
+    <span class="status" id="keyStatus"></span>
+  </div>
+  <div class="note">
+    ⚠ API キーは localStorage に保存されます。共有 PC では使用後に必ず「クリア」してください。
+    キーはこのブラウザから OpenAI API に直接送信されます (中継サーバーなし)。
+  </div>
+  <details class="api-config">
+    <summary>モデル設定</summary>
+    <div class="field-grid" style="margin-top:8px">
+      <div class="field">
+        <label>文字起こしモデル</label>
+        <select id="whisperModel">
+          <option value="whisper-1">whisper-1</option>
+          <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>要件抽出モデル</label>
+        <select id="gptModel">
+          <option value="gpt-4o-mini">gpt-4o-mini (安価)</option>
+          <option value="gpt-4o">gpt-4o (高精度)</option>
+        </select>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- 2. 入力 -->
+<section class="card">
+  <h2><span class="step-num">2</span>面談音声 / メモ</h2>
+  <div class="tab-row">
+    <button class="tab-btn active" data-tab="audio">音声ファイル</button>
+    <button class="tab-btn" data-tab="text">テキスト直接入力</button>
+  </div>
+  <div id="tab-audio">
+    <div class="row">
+      <input type="file" id="audioFile" accept="audio/*,video/*">
+      <button id="transcribeBtn">文字起こし実行</button>
+      <span class="status" id="transcribeStatus"></span>
+    </div>
+    <p class="small">対応形式: mp3, m4a, wav, webm 等 (最大25MB)</p>
+  </div>
+  <div style="margin-top:12px">
+    <label class="small">文字起こし結果 / 面談メモ (編集可)</label>
+    <textarea id="transcript" placeholder="例: 30代女性、現在都内の調剤薬局勤務 5年目。子どもが小さいので残業少なめ希望、年収550万円以上、できれば横浜か川崎エリア…"></textarea>
+  </div>
+  <div style="margin-top:8px" class="row">
+    <button id="extractBtn">希望条件を抽出</button>
+    <span class="status" id="extractStatus"></span>
+  </div>
+</section>
+
+<!-- 3. 要件 -->
+<section class="card hide" id="reqSection">
+  <h2><span class="step-num">3</span>希望条件 (編集可)</h2>
+  <div class="field-grid">
+    <div class="field">
+      <label>希望エリア (都道府県・市区町村)</label>
+      <div class="chip-input" data-target="areas"><input placeholder="入力してEnter"></div>
+    </div>
+    <div class="field">
+      <label>業態</label>
+      <div class="chip-input" data-target="workTypes"><input placeholder="例: 調剤薬局, ドラッグストア, 病院, 企業"></div>
+    </div>
+    <div class="field">
+      <label>雇用形態</label>
+      <div class="chip-input" data-target="employments"><input placeholder="例: 正社員, パート"></div>
+    </div>
+    <div class="field">
+      <label>希望年収下限 (万円)</label>
+      <input type="number" id="salaryMin" min="0" step="10">
+    </div>
+    <div class="field">
+      <label>許容残業時間/月 (時間)</label>
+      <input type="number" id="maxOvertime" min="0">
+    </div>
+    <div class="field">
+      <label>年間休日下限</label>
+      <input type="number" id="minHolidays" min="0">
+    </div>
+    <div class="field">
+      <label>薬剤師経験年数</label>
+      <input type="number" id="expYears" min="0">
+    </div>
+    <div class="field">
+      <label>絶対条件 (must have)</label>
+      <div class="chip-input must" data-target="mustHave"><input placeholder="例: 駅近, 土日休み"></div>
+    </div>
+    <div class="field">
+      <label>あったら嬉しい (nice to have)</label>
+      <div class="chip-input nice" data-target="niceToHave"><input placeholder="例: 託児所, 研修充実"></div>
+    </div>
+    <div class="field">
+      <label>NG条件 (deal breaker)</label>
+      <div class="chip-input deal" data-target="dealBreakers"><input placeholder="例: 夜勤, 在宅医療"></div>
+    </div>
+  </div>
+  <div style="margin-top:14px" class="row">
+    <button id="searchBtn">求人マッチング実行</button>
+    <button id="resetBtn" class="secondary">リセット</button>
+    <span class="status" id="searchStatus"></span>
+  </div>
+</section>
+
+<!-- 4. 結果 -->
+<section class="card hide" id="resultSection">
+  <h2><span class="step-num">4</span>マッチング結果 (上位30件)</h2>
+  <div class="stats" id="stats"></div>
+  <div class="job-list" id="jobList"></div>
+</section>
+
+</main>
+
+<script>
+/* ============================================================
+   モック求人データ生成 (50件)
+   ============================================================ */
+const FEATURES = ["駅近","土日休み","残業少","高年収","研修充実","託児所あり","在宅対応","年休120日以上","車通勤可","オンコールなし","未経験可","管理薬剤師候補","女性多数","パート可","週休3日","産育休実績"];
+
+const JOB_TEMPLATES = [
+  // 東京都
+  {pref:"東京都", city:"新宿区", station:"新宿"}, {pref:"東京都", city:"渋谷区", station:"渋谷"},
+  {pref:"東京都", city:"品川区", station:"大井町"}, {pref:"東京都", city:"世田谷区", station:"三軒茶屋"},
+  {pref:"東京都", city:"豊島区", station:"池袋"}, {pref:"東京都", city:"中央区", station:"銀座"},
+  {pref:"東京都", city:"江東区", station:"豊洲"}, {pref:"東京都", city:"杉並区", station:"荻窪"},
+  {pref:"東京都", city:"練馬区", station:"練馬"}, {pref:"東京都", city:"足立区", station:"北千住"},
+  {pref:"東京都", city:"八王子市", station:"八王子"}, {pref:"東京都", city:"立川市", station:"立川"},
+  // 神奈川
+  {pref:"神奈川県", city:"横浜市西区", station:"横浜"}, {pref:"神奈川県", city:"横浜市青葉区", station:"あざみ野"},
+  {pref:"神奈川県", city:"川崎市川崎区", station:"川崎"}, {pref:"神奈川県", city:"藤沢市", station:"藤沢"},
+  {pref:"神奈川県", city:"鎌倉市", station:"大船"},
+  // 埼玉・千葉
+  {pref:"埼玉県", city:"さいたま市大宮区", station:"大宮"}, {pref:"埼玉県", city:"川口市", station:"川口"},
+  {pref:"埼玉県", city:"所沢市", station:"所沢"},
+  {pref:"千葉県", city:"千葉市中央区", station:"千葉"}, {pref:"千葉県", city:"船橋市", station:"船橋"},
+  {pref:"千葉県", city:"柏市", station:"柏"},
+  // 関西
+  {pref:"大阪府", city:"大阪市北区", station:"梅田"}, {pref:"大阪府", city:"大阪市中央区", station:"心斎橋"},
+  {pref:"大阪府", city:"大阪市天王寺区", station:"天王寺"}, {pref:"大阪府", city:"堺市堺区", station:"堺"},
+  {pref:"京都府", city:"京都市下京区", station:"京都"}, {pref:"京都府", city:"京都市左京区", station:"出町柳"},
+  {pref:"兵庫県", city:"神戸市中央区", station:"三宮"}, {pref:"兵庫県", city:"西宮市", station:"西宮北口"},
+  // 中部
+  {pref:"愛知県", city:"名古屋市中区", station:"栄"}, {pref:"愛知県", city:"名古屋市千種区", station:"今池"},
+  {pref:"愛知県", city:"豊田市", station:"豊田市"}, {pref:"静岡県", city:"静岡市葵区", station:"静岡"},
+  {pref:"静岡県", city:"浜松市中区", station:"浜松"},
+  // 九州・北海道・東北
+  {pref:"福岡県", city:"福岡市博多区", station:"博多"}, {pref:"福岡県", city:"福岡市中央区", station:"天神"},
+  {pref:"福岡県", city:"北九州市小倉北区", station:"小倉"},
+  {pref:"北海道", city:"札幌市中央区", station:"札幌"}, {pref:"北海道", city:"札幌市北区", station:"北24条"},
+  {pref:"宮城県", city:"仙台市青葉区", station:"仙台"},
+  // その他地方
+  {pref:"広島県", city:"広島市中区", station:"広島"}, {pref:"岡山県", city:"岡山市北区", station:"岡山"},
+  {pref:"新潟県", city:"新潟市中央区", station:"新潟"}, {pref:"石川県", city:"金沢市", station:"金沢"},
+  {pref:"長野県", city:"長野市", station:"長野"}, {pref:"熊本県", city:"熊本市中央区", station:"熊本"},
+  {pref:"沖縄県", city:"那覇市", station:"県庁前"}, {pref:"群馬県", city:"高崎市", station:"高崎"}
+];
+
+const WORK_TYPES = ["調剤薬局","ドラッグストア","病院","クリニック","企業/CRO"];
+const COMPANIES = {
+  "調剤薬局": ["さくら薬局","あおぞら薬局","みらい調剤","ヘルスケア薬局","ファーマシティ","ひまわり薬局"],
+  "ドラッグストア": ["ウェルファミリー","ライフドラッグ","スマイル薬局","フォレスト・ドラッグ"],
+  "病院": ["市立総合病院","中央記念病院","桜並木病院","県立医療センター"],
+  "クリニック": ["内科・小児科クリニック","駅前メディカル","アイビークリニック"],
+  "企業/CRO": ["メディサイエンス株式会社","ファーマリサーチ","クリニカルパートナーズ"]
+};
+
+function pick(arr, n) {
+  const copy = [...arr]; const out = [];
+  for (let i=0;i<n && copy.length;i++) out.push(copy.splice(Math.floor(Math.random()*copy.length),1)[0]);
+  return out;
+}
+function rand(min, max) { return Math.floor(Math.random()*(max-min+1))+min; }
+
+// 再現性のため固定シードで生成
+let seed = 42;
+function srand() { seed = (seed * 9301 + 49297) % 233280; return seed/233280; }
+function sint(min,max) { return Math.floor(srand()*(max-min+1))+min; }
+function spick(arr) { return arr[Math.floor(srand()*arr.length)]; }
+function spickN(arr,n) {
+  const copy=[...arr]; const out=[];
+  for(let i=0;i<n && copy.length;i++) out.push(copy.splice(Math.floor(srand()*copy.length),1)[0]);
+  return out;
+}
+
+const JOBS = JOB_TEMPLATES.map((tpl, idx) => {
+  const wt = spick(WORK_TYPES);
+  const company = spick(COMPANIES[wt]);
+  const salaryBase = wt==="企業/CRO" ? sint(60,90)*10 : wt==="病院" ? sint(42,62)*10 : wt==="ドラッグストア" ? sint(48,75)*10 : sint(40,68)*10;
+  const features = spickN(FEATURES, sint(3,6));
+  const overtime = features.includes("残業少") ? sint(0,15) : sint(10,40);
+  const holidays = features.includes("年休120日以上") || features.includes("土日休み") ? sint(120,130) : sint(105,119);
+  const exp = sint(0,5);
+  const walk = features.includes("駅近") ? sint(1,5) : sint(5,15);
+  return {
+    id: idx+1,
+    title: `${company} ${tpl.city.replace(/市|区/, m=>m)}店 薬剤師`,
+    company: company,
+    prefecture: tpl.pref,
+    city: tpl.city,
+    station: tpl.station,
+    walkMin: walk,
+    workType: wt,
+    employment: srand()<0.85 ? "正社員" : (srand()<0.5 ? "パート" : "契約社員"),
+    salaryMin: salaryBase - 30,
+    salaryMax: salaryBase + 80,
+    workHours: spick(["9:00-18:00","8:30-17:30","10:00-19:00","9:30-18:30","変則シフト"]),
+    holidaysPerYear: holidays,
+    overtimeHoursPerMonth: overtime,
+    requiredExperienceYears: exp,
+    features: features,
+    description: `${tpl.pref}${tpl.city}にある${wt}。${tpl.station}駅徒歩${walk}分。${features.slice(0,3).join("、")}が特徴。`
+  };
+});
+
+/* ============================================================
+   API キー管理
+   ============================================================ */
+const apiKeyInput = document.getElementById("apiKey");
+const keyStatus = document.getElementById("keyStatus");
+document.getElementById("saveKey").onclick = () => {
+  const v = apiKeyInput.value.trim();
+  if (!v) { localStorage.removeItem("openai_key"); keyStatus.textContent = "クリアしました"; return; }
+  localStorage.setItem("openai_key", v);
+  keyStatus.textContent = "保存しました ✓";
+  keyStatus.className = "status success";
+};
+apiKeyInput.value = localStorage.getItem("openai_key") || "";
+
+/* ============================================================
+   タブ切替
+   ============================================================ */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active", b===btn));
+    document.getElementById("tab-audio").style.display = btn.dataset.tab==="audio" ? "" : "none";
+  };
+});
+
+/* ============================================================
+   Whisper 文字起こし
+   ============================================================ */
+document.getElementById("transcribeBtn").onclick = async () => {
+  const key = (apiKeyInput.value || localStorage.getItem("openai_key") || "").trim();
+  const file = document.getElementById("audioFile").files[0];
+  const status = document.getElementById("transcribeStatus");
+  if (!key) { status.textContent = "API キーを入力してください"; status.className="status error"; return; }
+  if (!file) { status.textContent = "音声ファイルを選択してください"; status.className="status error"; return; }
+  status.textContent = "文字起こし中... (1〜3分かかる場合があります)";
+  status.className = "status";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("model", document.getElementById("whisperModel").value);
+    fd.append("language", "ja");
+    fd.append("response_format", "text");
+    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + key },
+      body: fd
+    });
+    if (!res.ok) throw new Error("Whisper API エラー: " + res.status + " " + await res.text());
+    const text = await res.text();
+    document.getElementById("transcript").value = text;
+    status.textContent = "完了 ✓";
+    status.className = "status success";
+  } catch (e) {
+    status.textContent = e.message;
+    status.className = "status error";
+  }
+};
+
+/* ============================================================
+   GPT 要件抽出
+   ============================================================ */
+const REQ_SCHEMA_PROMPT = `あなたは薬剤師専門の転職エージェントを補助するアシスタントです。
+求職者との面談の文字起こしから、希望条件を以下のJSON形式で構造化して抽出してください。
+明示されていない項目は null または空配列にしてください。推測で埋めないこと。
+
+{
+  "areas": [string],            // 希望勤務地 (例: "東京都", "横浜市", "新宿区")
+  "workTypes": [string],        // "調剤薬局" | "ドラッグストア" | "病院" | "クリニック" | "企業/CRO"
+  "employments": [string],      // "正社員" | "パート" | "契約社員"
+  "salaryMin": number | null,   // 希望年収下限 (万円単位)
+  "maxOvertime": number | null, // 月あたり許容残業時間
+  "minHolidays": number | null, // 年間休日下限
+  "expYears": number | null,    // 薬剤師としての経験年数
+  "mustHave": [string],         // 絶対条件 ("駅近","土日休み","残業少","高年収","研修充実","託児所あり","在宅対応","年休120日以上","車通勤可","オンコールなし","未経験可","管理薬剤師候補","女性多数","パート可","週休3日","産育休実績" から選択)
+  "niceToHave": [string],       // あったら嬉しい (同上の選択肢から)
+  "dealBreakers": [string]      // NG条件 (同上の選択肢から)
+}
+
+応答は JSON のみ。説明文は不要。`;
+
+document.getElementById("extractBtn").onclick = async () => {
+  const key = (apiKeyInput.value || localStorage.getItem("openai_key") || "").trim();
+  const text = document.getElementById("transcript").value.trim();
+  const status = document.getElementById("extractStatus");
+  if (!key) { status.textContent = "API キーを入力してください"; status.className="status error"; return; }
+  if (!text) { status.textContent = "面談内容を入力してください"; status.className="status error"; return; }
+  status.textContent = "抽出中...";
+  status.className = "status";
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + key,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: document.getElementById("gptModel").value,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: REQ_SCHEMA_PROMPT },
+          { role: "user", content: text }
+        ]
+      })
+    });
+    if (!res.ok) throw new Error("GPT API エラー: " + res.status + " " + await res.text());
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    fillRequirements(parsed);
+    document.getElementById("reqSection").classList.remove("hide");
+    document.getElementById("reqSection").scrollIntoView({behavior:"smooth"});
+    status.textContent = "抽出完了 ✓";
+    status.className = "status success";
+  } catch (e) {
+    status.textContent = e.message;
+    status.className = "status error";
+  }
+};
+
+/* ============================================================
+   要件フォーム制御
+   ============================================================ */
+const chipState = { areas:[], workTypes:[], employments:[], mustHave:[], niceToHave:[], dealBreakers:[] };
+
+function renderChips() {
+  document.querySelectorAll(".chip-input").forEach(box => {
+    const target = box.dataset.target;
+    const input = box.querySelector("input");
+    box.querySelectorAll(".chip").forEach(c=>c.remove());
+    const cls = box.classList.contains("must")?"must":box.classList.contains("nice")?"nice":box.classList.contains("deal")?"deal":"";
+    chipState[target].forEach((v,i) => {
+      const chip = document.createElement("span");
+      chip.className = "chip " + cls;
+      chip.innerHTML = `${v} <button data-i="${i}">×</button>`;
+      chip.querySelector("button").onclick = () => {
+        chipState[target].splice(i,1);
+        renderChips();
+      };
+      box.insertBefore(chip, input);
+    });
+  });
+}
+
+document.querySelectorAll(".chip-input").forEach(box => {
+  const input = box.querySelector("input");
+  box.onclick = () => input.focus();
+  input.onkeydown = e => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const v = input.value.trim().replace(/,$/,"");
+      if (v) {
+        chipState[box.dataset.target].push(v);
+        input.value = "";
+        renderChips();
+      }
+    } else if (e.key === "Backspace" && !input.value) {
+      chipState[box.dataset.target].pop();
+      renderChips();
+    }
+  };
+});
+
+function fillRequirements(r) {
+  chipState.areas = r.areas || [];
+  chipState.workTypes = r.workTypes || [];
+  chipState.employments = r.employments || [];
+  chipState.mustHave = r.mustHave || [];
+  chipState.niceToHave = r.niceToHave || [];
+  chipState.dealBreakers = r.dealBreakers || [];
+  document.getElementById("salaryMin").value = r.salaryMin ?? "";
+  document.getElementById("maxOvertime").value = r.maxOvertime ?? "";
+  document.getElementById("minHolidays").value = r.minHolidays ?? "";
+  document.getElementById("expYears").value = r.expYears ?? "";
+  renderChips();
+}
+
+document.getElementById("resetBtn").onclick = () => {
+  fillRequirements({});
+};
+
+/* ============================================================
+   マッチングロジック
+   ============================================================ */
+function scoreJob(job, req) {
+  let score = 0;
+  const reasons = [];
+  const matched = [];
+  const missed = [];
+
+  // 勤務地 (最大25点)
+  if (req.areas.length === 0) {
+    score += 10;
+  } else {
+    const hit = req.areas.find(a => job.prefecture.includes(a) || job.city.includes(a) || a.includes(job.prefecture));
+    if (hit) { score += 25; reasons.push(`勤務地一致(${hit})`); }
+  }
+  // 業態 (20点)
+  if (req.workTypes.length === 0 || req.workTypes.some(w => job.workType.includes(w) || w.includes(job.workType))) {
+    score += 20;
+    if (req.workTypes.length) reasons.push(`業態:${job.workType}`);
+  }
+  // 雇用形態 (10点)
+  if (req.employments.length === 0 || req.employments.includes(job.employment)) {
+    score += 10;
+  }
+  // 年収 (15点)
+  if (req.salaryMin == null) {
+    score += 7;
+  } else if (job.salaryMax >= req.salaryMin) {
+    score += 15;
+    reasons.push(`年収${job.salaryMin}〜${job.salaryMax}万`);
+  }
+  // 残業 (10点)
+  if (req.maxOvertime == null) {
+    score += 5;
+  } else if (job.overtimeHoursPerMonth <= req.maxOvertime) {
+    score += 10;
+    reasons.push(`残業${job.overtimeHoursPerMonth}h/月`);
+  }
+  // 休日 (10点)
+  if (req.minHolidays == null) {
+    score += 5;
+  } else if (job.holidaysPerYear >= req.minHolidays) {
+    score += 10;
+    reasons.push(`年休${job.holidaysPerYear}日`);
+  }
+  // 経験 (5点)
+  if (req.expYears != null && job.requiredExperienceYears <= req.expYears) {
+    score += 5;
+  }
+  // mustHave
+  req.mustHave.forEach(m => {
+    if (job.features.includes(m)) { score += 8; matched.push(m); }
+    else { score -= 15; missed.push(m); }
+  });
+  // niceToHave
+  req.niceToHave.forEach(n => {
+    if (job.features.includes(n)) { score += 3; matched.push(n); }
+  });
+  // dealBreakers
+  req.dealBreakers.forEach(d => {
+    if (job.features.includes(d) || job.description.includes(d)) {
+      score -= 40;
+      missed.push(d);
+    }
+  });
+
+  return { score: Math.max(0, score), reasons, matched, missed };
+}
+
+document.getElementById("searchBtn").onclick = () => {
+  const req = {
+    areas: chipState.areas,
+    workTypes: chipState.workTypes,
+    employments: chipState.employments,
+    salaryMin: parseInt(document.getElementById("salaryMin").value) || null,
+    maxOvertime: parseInt(document.getElementById("maxOvertime").value) || null,
+    minHolidays: parseInt(document.getElementById("minHolidays").value) || null,
+    expYears: parseInt(document.getElementById("expYears").value) || null,
+    mustHave: chipState.mustHave,
+    niceToHave: chipState.niceToHave,
+    dealBreakers: chipState.dealBreakers
+  };
+  const scored = JOBS.map(j => ({ job: j, ...scoreJob(j, req) }));
+  scored.sort((a,b) => b.score - a.score);
+  const top = scored.slice(0, 30);
+  renderResults(top, req);
+  document.getElementById("resultSection").classList.remove("hide");
+  document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
+};
+
+/* ============================================================
+   結果表示
+   ============================================================ */
+function renderResults(results, req) {
+  const maxScore = results[0]?.score || 1;
+  const avgScore = Math.round(results.reduce((s,r)=>s+r.score,0)/results.length);
+  document.getElementById("stats").innerHTML = `
+    <div>表示件数: <strong>${results.length}</strong> / ${JOBS.length}件</div>
+    <div>最高スコア: <strong>${maxScore}</strong></div>
+    <div>平均スコア: <strong>${avgScore}</strong></div>
+    <div>絶対条件: <strong>${req.mustHave.length}</strong>項目 / NG: <strong>${req.dealBreakers.length}</strong>項目</div>
+  `;
+  const list = document.getElementById("jobList");
+  list.innerHTML = "";
+  results.forEach((r, i) => {
+    const j = r.job;
+    const featuresHtml = j.features.map(f => {
+      let cls = "feat";
+      if (r.matched.includes(f)) cls += " match";
+      else if (req.dealBreakers.includes(f)) cls += " miss";
+      return `<span class="${cls}">${f}</span>`;
+    }).join("");
+    const missedHtml = r.missed.filter(m => !j.features.includes(m))
+      .map(m => `<span class="feat miss">条件不一致: ${m}</span>`).join("");
+    const card = document.createElement("div");
+    card.className = "job-card";
+    card.innerHTML = `
+      <div class="job-rank ${i<3?'top':''}">${i+1}</div>
+      <div class="job-title">${j.title}</div>
+      <div class="job-company">${j.company} / ${j.workType}</div>
+      <div class="job-meta">
+        <span>${j.prefecture} ${j.city}</span>
+        <span>${j.station}駅 徒歩${j.walkMin}分</span>
+        <span>${j.employment}</span>
+        <span>年収 ${j.salaryMin}〜${j.salaryMax}万</span>
+        <span>${j.workHours}</span>
+        <span>年休${j.holidaysPerYear}日</span>
+        <span>残業${j.overtimeHoursPerMonth}h/月</span>
+      </div>
+      <div class="job-features">${featuresHtml}${missedHtml}</div>
+      <div class="score-row">
+        <div class="score-bar"><div class="score-fill" style="width:${Math.min(100, r.score/maxScore*100)}%"></div></div>
+        <div class="score-num">${r.score}</div>
+      </div>
+      <div class="reasons">${r.reasons.length ? "✓ "+r.reasons.join(" / ") : ""}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+/* 初期化 */
+renderChips();
+</script>
+</body>
+</html>

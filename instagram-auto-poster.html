@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instagram Auto Poster</title>
+<style>
+:root {
+  --bg: #0d0d0d;
+  --surface: #1a1a2e;
+  --card: #16213e;
+  --accent: #e91e8c;
+  --accent2: #915eff;
+  --text: #e0e0e0;
+  --dim: #888;
+  --success: #00d09c;
+  --warning: #ffd700;
+  --error: #ff4757;
+  --border: rgba(255,255,255,0.1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+header {
+  background: linear-gradient(135deg, #833ab4 0%, #e91e8c 50%, #fd1d1d 100%);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+header h1 { font-size: 1.2rem; font-weight: 700; color: #fff; }
+#schedulerBadge {
+  margin-left: auto;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+#schedulerBadge.active { background: var(--success); color: #000; }
+nav {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+nav::-webkit-scrollbar { display: none; }
+nav button {
+  padding: 13px 18px;
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+nav button:hover:not(.active) { color: var(--text); }
+main { max-width: 760px; margin: 0 auto; padding: 20px 14px; }
+.tab { display: none; }
+.tab.active { display: block; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.card h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 14px; }
+.card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; color: var(--accent2); }
+.fg { margin-bottom: 14px; }
+label { display: block; font-size: 0.78rem; color: var(--dim); margin-bottom: 5px; }
+input, select, textarea {
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+select option { background: #1a1a2e; }
+textarea { resize: vertical; min-height: 80px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); }
+.btn-secondary:hover { background: rgba(255,255,255,0.12); }
+.btn-danger { background: var(--error); color: #fff; }
+.btn-success { background: var(--success); color: #000; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+.btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+.niche-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.niche-card {
+  padding: 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.niche-card:hover { border-color: var(--accent2); }
+.niche-card.selected { border-color: var(--accent); background: rgba(233,30,140,0.08); }
+.niche-card .ic { font-size: 1.8rem; margin-bottom: 6px; }
+.niche-card .nm { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
+.niche-card .ds { font-size: 0.72rem; color: var(--dim); }
+.niche-card .tg {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  margin-top: 5px;
+  background: rgba(0,208,156,0.15);
+  color: var(--success);
+}
+.info-box {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(145,94,255,0.1);
+  border: 1px solid rgba(145,94,255,0.25);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  color: var(--dim);
+}
+.info-box strong { color: var(--accent2); }
+.warn-box {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255,215,0,0.08);
+  border: 1px solid rgba(255,215,0,0.25);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  color: var(--warning);
+}
+.step-list { counter-reset: step; }
+.step-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 1px;
+}
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  padding: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+}
+.stat-val {
+  font-size: 1.7rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-lbl { font-size: 0.72rem; color: var(--dim); margin-top: 3px; }
+.post-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+.post-card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border);
+}
+.post-card-bd { padding: 14px; }
+.post-time { font-size: 0.85rem; font-weight: 600; color: var(--accent2); }
+.badge {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.badge-pending { background: rgba(255,215,0,0.15); color: var(--warning); }
+.badge-posted { background: rgba(0,208,156,0.15); color: var(--success); }
+.badge-failed { background: rgba(255,71,87,0.15); color: var(--error); }
+.post-preview { display: flex; gap: 10px; align-items: flex-start; }
+.post-img { width: 58px; height: 58px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+.post-caption {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--dim);
+  white-space: pre-wrap;
+  max-height: 90px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.hashtag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.ht { padding: 3px 8px; border-radius: 12px; background: rgba(145,94,255,0.15); color: var(--accent2); font-size: 0.7rem; }
+.log-item {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  display: flex;
+  gap: 10px;
+}
+.log-item:last-child { border-bottom: none; }
+.log-t { color: var(--dim); white-space: nowrap; font-size: 0.72rem; min-width: 120px; }
+.log-m { flex: 1; line-height: 1.5; }
+.log-item.success .log-m { color: var(--success); }
+.log-item.error .log-m { color: var(--error); }
+.empty-state { text-align: center; padding: 36px 20px; color: var(--dim); }
+.empty-state .ic { font-size: 2.5rem; margin-bottom: 10px; }
+.row { display: flex; gap: 10px; align-items: flex-end; }
+.row .fg { flex: 1; margin-bottom: 0; }
+.spin {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+.dot-active { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; margin-right: 4px; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.3s; }
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+.roadmap-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.82rem; line-height: 1.5; }
+.roadmap-period { flex-shrink: 0; font-weight: 600; color: var(--accent2); min-width: 90px; }
+.tab-hint { font-size: 0.72rem; color: var(--dim); margin-top: 4px; }
+@media (max-width: 480px) {
+  .niche-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+  </svg>
+  <h1>Instagram Auto Poster</h1>
+  <span id="schedulerBadge">停止中</span>
+</header>
+
+<nav>
+  <button class="active" data-tab="setup">⚙️ 初期設定</button>
+  <button data-tab="niche">🎯 ニッチ戦略</button>
+  <button data-tab="generate">✨ 投稿生成</button>
+  <button data-tab="queue">📅 キュー管理</button>
+  <button data-tab="history">📊 投稿履歴</button>
+</nav>
+
+<main>
+
+  <!-- 初期設定 -->
+  <div class="tab active" id="tab-setup">
+    <div class="info-box">
+      <strong>🚀 収益化最速ニッチ：AI活用術 × 副業</strong><br>
+      2026年Instagramで最も急成長するカテゴリです。毎日3投稿（7時・12時・19時）で90日以内に1万フォロワーと月10万円以上の収益を目指しましょう。
+    </div>
+
+    <div class="card">
+      <h2>Instagram Graph API</h2>
+      <div class="info-box" style="margin-bottom:14px">
+        <strong>取得ステップ：</strong>
+        <div class="step-list" style="margin-top:8px">
+          <div class="step-item"><span class="step-num">1</span><span>Instagramアカウントをビジネス/クリエイターに切替</span></div>
+          <div class="step-item"><span class="step-num">2</span><span>Meta for Developersでアプリを作成し、Instagramを追加</span></div>
+          <div class="step-item"><span class="step-num">3</span><span>Graph API Explorerで <code>instagram_content_publish</code> 権限付きトークンを発行</span></div>
+          <div class="step-item"><span class="step-num">4</span><span>長期トークンに変換（60日有効）し下記に貼り付け</span></div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Instagram ビジネスアカウント ユーザーID</label>
+        <input type="text" id="igUserId" placeholder="例: 17841234567890123" />
+        <div class="tab-hint">Graph API Explorer → ユーザーID を確認</div>
+      </div>
+      <div class="fg">
+        <label>アクセストークン</label>
+        <input type="password" id="igToken" placeholder="EAAxxxxxxxxxxxxxxxx..." />
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>OpenAI API（キャプション生成）</h2>
+      <div class="fg">
+        <label>OpenAI APIキー</label>
+        <input type="password" id="openaiKey" placeholder="sk-proj-..." />
+        <div class="tab-hint">platform.openai.com → API keys で取得（gpt-4o-mini使用、低コスト）</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ImgBB API（スライド画像のアップロード）</h2>
+      <div class="fg">
+        <label>ImgBB APIキー</label>
+        <input type="password" id="imgbbKey" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+        <div class="tab-hint">imgbb.com → アカウント作成 → API → 無料APIキー取得</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>投稿時刻設定</h2>
+      <div style="font-size:0.8rem;color:var(--dim);margin-bottom:10px">エンゲージメント率が高い推奨時間帯を設定済み</div>
+      <div class="row">
+        <div class="fg">
+          <label>投稿1（朝）</label>
+          <input type="time" id="time1" value="07:00" />
+        </div>
+        <div class="fg">
+          <label>投稿2（昼）</label>
+          <input type="time" id="time2" value="12:00" />
+        </div>
+        <div class="fg">
+          <label>投稿3（夜）</label>
+          <input type="time" id="time3" value="19:00" />
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 設定を保存</button>
+      <button class="btn btn-success" onclick="testIGConnection()">🔗 Instagram接続テスト</button>
+    </div>
+    <div id="setupMsg" style="margin-top:10px;font-size:0.85rem"></div>
+  </div>
+
+  <!-- ニッチ戦略 -->
+  <div class="tab" id="tab-niche">
+    <div class="card">
+      <h2>収益化ニッチを選択</h2>
+      <div class="niche-grid">
+        <div class="niche-card" id="nc-ai" onclick="pickNiche('ai')">
+          <div class="ic">🤖</div>
+          <div class="nm">AI活用術</div>
+          <div class="ds">ChatGPT・Claudeの使いこなし術</div>
+          <div class="tg">🔥 最急成長ニッチ</div>
+        </div>
+        <div class="niche-card" id="nc-money" onclick="pickNiche('money')">
+          <div class="ic">💰</div>
+          <div class="nm">副業・マネー</div>
+          <div class="ds">副業・投資・節約・NISA</div>
+          <div class="tg">💎 最高単価アフィリ</div>
+        </div>
+        <div class="niche-card" id="nc-biz" onclick="pickNiche('biz')">
+          <div class="ic">📈</div>
+          <div class="nm">ビジネス思考</div>
+          <div class="ds">仕事術・スキルアップ・思考法</div>
+          <div class="tg">👔 高収入層リーチ</div>
+        </div>
+        <div class="niche-card" id="nc-life" onclick="pickNiche('life')">
+          <div class="ic">✨</div>
+          <div class="nm">ライフスタイル</div>
+          <div class="ds">健康・美容・習慣・自己投資</div>
+          <div class="tg">📊 最大ボリューム層</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>投稿スタイル</h2>
+      <div class="fg">
+        <label>投稿フォーマット</label>
+        <select id="postStyle">
+          <option value="tips">Tipsリスト型（〇〇な△つの方法）— 保存率が高い</option>
+          <option value="story">ストーリー型（体験・事例ベース）— 共感・シェアされやすい</option>
+          <option value="compare">比較型（AとBの違い）— 教育系に強い</option>
+          <option value="hook">フック型（衝撃の事実から始める）— 新規獲得に強い</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>ターゲット層</label>
+          <select id="target">
+            <option value="young">20代・社会人・学生</option>
+            <option value="mid">30〜40代・会社員・主婦</option>
+            <option value="all">全年齢（幅広く）</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>投稿言語</label>
+          <select id="lang">
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveNiche()">✅ ニッチ設定を保存</button>
+    </div>
+
+    <div class="card">
+      <h2>収益化ロードマップ</h2>
+      <div class="roadmap-row"><span class="roadmap-period">〜30日目</span><span style="font-size:0.82rem">毎日3投稿でアルゴリズムを習得。エンゲージメント率10%以上を維持</span></div>
+      <div class="roadmap-row"><span class="roadmap-period">〜60日目</span><span style="font-size:0.82rem">1,000〜5,000フォロワー達成。A8.netでアフィリエイト登録・リンク掲載開始</span></div>
+      <div class="roadmap-row"><span class="roadmap-period">〜90日目</span><span style="font-size:0.82rem">5,000〜10,000フォロワー。企業への案件営業・LINEやnoteへの誘導</span></div>
+      <div class="roadmap-row"><span class="roadmap-period">90日以降</span><span style="font-size:0.82rem">安定月収10万円超。コンサル・オンライン講座・自社商品展開</span></div>
+      <div class="divider"></div>
+      <div style="font-size:0.8rem;color:var(--dim)">
+        <strong style="color:var(--accent2)">推奨アフィリエイト案件：</strong><br>
+        AI系：ChatGPT Plus / Claude Pro / Notion AI（継続収益型）<br>
+        金融系：証券口座・クレカ・NISA（1件5,000〜20,000円）<br>
+        物販：Amazon アソシエイト（ビジネス書・ガジェット）
+      </div>
+    </div>
+  </div>
+
+  <!-- 投稿生成 -->
+  <div class="tab" id="tab-generate">
+    <div class="card">
+      <h2>AI投稿生成</h2>
+      <div class="fg">
+        <label>生成数</label>
+        <select id="genCount">
+          <option value="1">1投稿</option>
+          <option value="3" selected>3投稿（1日分）</option>
+          <option value="9">9投稿（3日分）</option>
+          <option value="21">21投稿（1週間分）</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>カスタムトピック（任意・カンマ区切り）</label>
+        <input type="text" id="customTopic" placeholder="例: ChatGPTで節約、副業の始め方、AI画像生成の稼ぎ方" />
+        <div class="tab-hint">空白の場合はニッチに応じたトピックをAIが自動選択</div>
+      </div>
+      <button class="btn btn-primary" id="genBtn" onclick="generatePosts()">✨ 投稿を生成する</button>
+      <div id="genProgress" style="display:none;margin-top:14px">
+        <div style="font-size:0.82rem;color:var(--dim)" id="genMsg">生成中...</div>
+        <div class="progress-bar"><div class="progress-fill" id="genBar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div id="previewArea"></div>
+  </div>
+
+  <!-- キュー管理 -->
+  <div class="tab" id="tab-queue">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="sPending">0</div><div class="stat-lbl">待機中</div></div>
+      <div class="stat-card"><div class="stat-val" id="sPosted">0</div><div class="stat-lbl">投稿済</div></div>
+      <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">合計</div></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin-bottom:0">自動投稿スケジューラー</h2>
+        <button class="btn btn-primary btn-sm" id="schedulerBtn" onclick="toggleScheduler()">▶ 開始</button>
+      </div>
+      <div class="warn-box">
+        ⚠️ 自動投稿中はこのタブを開いたままにしてください。ブラウザを閉じると停止します。
+      </div>
+      <div id="nextPostInfo" style="font-size:0.82rem;color:var(--dim)">スケジューラーを開始すると次の投稿情報が表示されます</div>
+    </div>
+
+    <div id="queueList"></div>
+  </div>
+
+  <!-- 投稿履歴 -->
+  <div class="tab" id="tab-history">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="hPosted">0</div><div class="stat-lbl">投稿済</div></div>
+      <div class="stat-card"><div class="stat-val" id="hFailed">0</div><div class="stat-lbl">失敗</div></div>
+      <div class="stat-card"><div class="stat-val" id="hDays">0</div><div class="stat-lbl">稼働日数</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin-bottom:0">投稿ログ</h2>
+        <button class="btn btn-secondary btn-sm" onclick="clearLogs()">🗑 クリア</button>
+      </div>
+      <div id="logArea">
+        <div class="empty-state"><div class="ic">📊</div><div>まだ投稿履歴がありません</div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const NICHES = {
+  ai: {
+    name: 'AI活用術',
+    imageQuery: 'artificial intelligence digital technology',
+    topics: [
+      'ChatGPTで仕事が激変する使い方5選【2026年版】',
+      'プロが使うAIプロンプトの書き方5選',
+      'AIで副業を月10万円に育てる5つのステップ',
+      '2026年今すぐ使えるAIツール5選',
+      'Claude 4で仕事の質が上がる活用法5選',
+      'NotionAIで作業を自動化できること5選',
+      'AIで時間を生み出す仕事術5選',
+      'Perplexity AIで調査が速くなる使い方5選',
+      'AIで稼げる人がやっていること5選',
+      'ChatGPTで英語力が上がる勉強法5選',
+      '知らないと損するAI副業の始め方5ステップ',
+      '生産性が3倍になるAI活用習慣5選',
+    ],
+    hashtags: '#AI活用 #ChatGPT #人工知能 #AI副業 #生産性向上 #chatgpt活用術 #AIツール #働き方改革 #副業 #在宅ワーク #テクノロジー #ITスキル #自己投資 #スキルアップ #chatgpt日本語 #AI #自動化 #プロンプトエンジニアリング #副業収入 #デジタルマーケティング',
+  },
+  money: {
+    name: '副業・マネー',
+    imageQuery: 'financial success money investment wealth',
+    topics: [
+      '月5万円稼げる副業5選【2026年最新版】',
+      '20代が今すぐ始めるべき資産形成5ステップ',
+      'NISA初心者が知るべき基本ルール5選',
+      '副業で月10万円を達成した人がやった5つのこと',
+      '生活費を月3万円削減できる節約術5選',
+      '在宅でできる副業5選と実際の月収を公開',
+      'クレジットカードをお得に使いこなす方法5選',
+      '会社員が合法的に節税できる方法5選',
+      'フリーランス確定申告でやるべきこと5選',
+      '年収300万でも資産を増やせる投資術5選',
+      '楽天経済圏で得をする使い方5選',
+      '副業を始める前に知っておくべきこと5選',
+    ],
+    hashtags: '#副業 #マネー #資産形成 #投資 #節約 #副業収入 #NISA #iDeCo #在宅ワーク #フリーランス #副収入 #お金の知識 #節約術 #稼ぎ方 #収入アップ #家計管理 #経済的自由 #サイドビジネス #ファイナンシャルリテラシー #節税',
+  },
+  biz: {
+    name: 'ビジネス思考',
+    imageQuery: 'business professional success leadership',
+    topics: [
+      'できる人がやっている朝習慣5選',
+      '仕事が速い人だけが知っているコツ5選',
+      'ロジカルシンキングを鍛える方法5選',
+      '信頼される人がやっている話し方5選',
+      '会議を効率化するテクニック5選',
+      '昇進する人がやっていること5選',
+      '年収を上げるために読むべきビジネス書5選',
+      'プレゼンで差をつける構成の作り方5ステップ',
+      '交渉力を高める心理テクニック5選',
+      '残業ゼロを実現するタスク管理術5選',
+      '副業で成功する人の考え方5選',
+      '人間関係が劇的に変わるコミュニケーション術5選',
+    ],
+    hashtags: '#ビジネス #仕事術 #思考法 #スキルアップ #キャリア #自己啓発 #リーダーシップ #マネジメント #生産性 #読書 #勉強 #成長 #仕事 #問題解決 #コミュニケーション #プレゼン #社会人 #サラリーマン #キャリアアップ #ビジネス思考',
+  },
+  life: {
+    name: 'ライフスタイル',
+    imageQuery: 'healthy lifestyle wellness minimal living',
+    topics: [
+      '人生が変わる朝習慣5選',
+      'ストレスを減らせる考え方5選',
+      '睡眠の質を上げる科学的な方法5選',
+      '部屋をスッキリさせるミニマリスト術5選',
+      '運動を継続できる人がやっていること5選',
+      '自己肯定感を高める小さな習慣5選',
+      '肌荒れを改善するために変えること5選',
+      '早起きを習慣にする5つのステップ',
+      'ダイエットに成功する人がやっていること5選',
+      '集中力を上げる環境の作り方5選',
+      'メンタルを安定させる習慣5選',
+      'お金が貯まる生活習慣5選',
+    ],
+    hashtags: '#ライフスタイル #習慣 #自己改善 #健康 #ダイエット #美容 #マインドセット #自己啓発 #暮らし #ウェルネス #メンタルヘルス #睡眠 #運動 #食事 #モチベーション #毎日の習慣 #ポジティブ #継続 #ミニマリスト #朝活',
+  },
+};
+
+const S = {
+  get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+let cfg = S.get('cfg', {
+  igUserId: '', igToken: '', openaiKey: '', pexelsKey: '', imgbbKey: '',
+  times: ['07:00', '12:00', '19:00'],
+  niche: 'ai', postStyle: 'tips', target: 'young', lang: 'ja',
+});
+let queue = S.get('queue', []);
+let logs = S.get('logs', []);
+let running = false;
+let timer = null;
+
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const t = btn.dataset.tab;
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + t).classList.add('active');
+    if (t === 'queue') renderQueue();
+    if (t === 'history') renderHistory();
+  });
+});
+
+function loadSettings() {
+  document.getElementById('igUserId').value = cfg.igUserId || '';
+  document.getElementById('igToken').value = cfg.igToken || '';
+  document.getElementById('openaiKey').value = cfg.openaiKey || '';
+  document.getElementById('imgbbKey').value = cfg.imgbbKey || '';
+  document.getElementById('time1').value = cfg.times?.[0] || '07:00';
+  document.getElementById('time2').value = cfg.times?.[1] || '12:00';
+  document.getElementById('time3').value = cfg.times?.[2] || '19:00';
+  document.getElementById('postStyle').value = cfg.postStyle || 'tips';
+  document.getElementById('target').value = cfg.target || 'young';
+  document.getElementById('lang').value = cfg.lang || 'ja';
+  pickNiche(cfg.niche || 'ai');
+}
+
+function saveSettings() {
+  cfg.igUserId = document.getElementById('igUserId').value.trim();
+  cfg.igToken = document.getElementById('igToken').value.trim();
+  cfg.openaiKey = document.getElementById('openaiKey').value.trim();
+  cfg.imgbbKey = document.getElementById('imgbbKey').value.trim();
+  cfg.times = [
+    document.getElementById('time1').value,
+    document.getElementById('time2').value,
+    document.getElementById('time3').value,
+  ];
+  S.set('cfg', cfg);
+  showMsg('setupMsg', '✅ 設定を保存しました', 'success');
+}
+
+async function testIGConnection() {
+  saveSettings();
+  if (!cfg.igToken) {
+    showMsg('setupMsg', '❌ アクセストークンを入力してください', 'error');
+    return;
+  }
+  if (!cfg.igUserId) {
+    showMsg('setupMsg', '❌ ユーザーIDを入力してください', 'error');
+    return;
+  }
+  showMsg('setupMsg', '<span class="spin"></span> 接続テスト中...');
+  try {
+    const mediaRes = await fetch(`https://graph.facebook.com/v20.0/${cfg.igUserId}/media`, {
+      headers: { 'Authorization': `Bearer ${cfg.igToken}` },
+    });
+    const mediaData = await mediaRes.json();
+    if (!mediaData.error) {
+      showMsg('setupMsg', `✅ 接続成功！投稿エンドポイント確認済み（ID: ${cfg.igUserId}）`, 'success');
+      return;
+    }
+    throw new Error(mediaData.error.message);
+  } catch (e) {
+    showMsg('setupMsg', `❌ ${e.message}`, 'error');
+  }
+}
+
+function saveNiche() {
+  cfg.postStyle = document.getElementById('postStyle').value;
+  cfg.target = document.getElementById('target').value;
+  cfg.lang = document.getElementById('lang').value;
+  S.set('cfg', cfg);
+  alert('ニッチ設定を保存しました！');
+}
+
+function pickNiche(n) {
+  document.querySelectorAll('.niche-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('nc-' + n)?.classList.add('selected');
+  cfg.niche = n;
+  S.set('cfg', cfg);
+}
+
+async function generatePosts() {
+  if (!cfg.openaiKey) { alert('OpenAI APIキーを設定タブで入力してください'); return; }
+  const count = parseInt(document.getElementById('genCount').value);
+  const customRaw = document.getElementById('customTopic').value.trim();
+  const customTopics = customRaw ? customRaw.split(/[,、，]/).map(s => s.trim()).filter(Boolean) : [];
+  const btn = document.getElementById('genBtn');
+  const prog = document.getElementById('genProgress');
+  const msgEl = document.getElementById('genMsg');
+  const bar = document.getElementById('genBar');
+  btn.disabled = true;
+  prog.style.display = 'block';
+  document.getElementById('previewArea').innerHTML = '';
+  const niche = NICHES[cfg.niche];
+  const usedTopics = [...niche.topics];
+  for (let i = 0; i < count; i++) {
+    bar.style.width = Math.round((i / count) * 100) + '%';
+    let topic;
+    if (customTopics.length > 0) {
+      topic = customTopics[i % customTopics.length];
+    } else {
+      const idx = Math.floor(Math.random() * usedTopics.length);
+      topic = usedTopics.splice(idx, 1)[0] || niche.topics[Math.floor(Math.random() * niche.topics.length)];
+    }
+    msgEl.textContent = `${i + 1}/${count} 生成中: ${topic}`;
+    try {
+      const [caption, imageUrl] = await Promise.all([
+        genCaption(topic, niche),
+        fetchImage(niche.imageQuery),
+      ]);
+      const post = {
+        id: Date.now() + i,
+        topic, caption, imageUrl,
+        niche: cfg.niche,
+        status: 'pending',
+        scheduledAt: null,
+        createdAt: new Date().toISOString(),
+      };
+      queue.push(post);
+      S.set('queue', queue);
+      appendPreview(post);
+    } catch (e) {
+      addLog('error', `生成エラー（${topic}）: ${e.message}`);
+    }
+    await delay(300);
+  }
+  scheduleUnscheduled();
+  bar.style.width = '100%';
+  msgEl.innerHTML = `<span style="color:var(--success)">✅ ${count}投稿の生成が完了しました。キューに追加されました。</span>`;
+  btn.disabled = false;
+  updateStats();
+}
+
+async function genCaption(topic, niche) {
+  const styleMap = {
+    tips: 'リスト型（番号付きTipsを3〜5個）',
+    story: 'ストーリー型（実体験ベース、感情に訴える）',
+    compare: '比較型（AとBを対比して価値を伝える）',
+    hook: 'フック型（衝撃的な一文で始め、続きが気になる構成）',
+  };
+  const targetMap = {
+    young: '20代の社会人・学生',
+    mid: '30〜40代の会社員・主婦',
+    all: '幅広い年齢層',
+  };
+  const prompt = cfg.lang === 'ja'
+    ? `Instagramのカルーセル投稿用キャプションを次のフォーマット通りに作成してください。
+
+トピック: ${topic}
+ターゲット: ${targetMap[cfg.target || 'young']}
+
+━━ 出力フォーマット（この順番で必ずこの通りに出力する）━━
+
+【衝撃的なタイトルをここに書く】
+↑タイトルは「知らないと損」「激変した」「99%が知らない」などのフック＋「5選」「5つの」「5ステップ」を必ず含む。20字以内。例：【99%が知らないAI副業術5選】
+
+【課題】読者の悩みを1文（〜ていませんか？形式、35字以内）
+
+①ポイント1タイトル（15字以内・数字か感情語入り）
+・驚きの数値・統計・実例（「〇〇すると△△%改善」など事実ベースで40〜50字）
+・今日から使える具体的な行動ステップ（ツール名・手順込みで40〜50字）
+・実践した場合の変化・メリット（40〜50字）
+
+②〜⑤も全く同じ形式で
+
+💾 保存して後で見返してね。フォローすると毎日役立つ情報を発信中！
+
+━━ 絶対ルール ━━
+- 【課題】は必ず1行、35字以内
+- ポイントは必ず5つ（①〜⑤のみ）
+- 各「・」は3つ：事実→実践→効果の順番
+- ハッシュタグ不要
+- 各「・」は40字以上で具体的に`
+    : `Write an Instagram carousel caption for: ${topic}. Output exactly in this order: 1) 【shocking title with hook like "99% don't know" + "5 tips/steps"】 2) 【課題】one empathetic problem sentence 3) ①-⑤ five points each with 3 bullets (fact/stat → action → result, 40-50 chars each) 4) save/follow CTA. No hashtags.`;
+
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.openaiKey}` },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1200,
+      temperature: 0.85,
+    }),
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || 'OpenAI APIエラー'); }
+  const d = await r.json();
+  return d.choices[0].message.content.trim();
+}
+
+async function fetchImage(query) {
+  if (!cfg.pexelsKey) return `https://picsum.photos/seed/${Date.now()}/1080/1080`;
+  try {
+    const r = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&orientation=square`,
+      { headers: { Authorization: cfg.pexelsKey } }
+    );
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    if (!d.photos?.length) throw new Error();
+    const p = d.photos[Math.floor(Math.random() * d.photos.length)];
+    return p.src.large2x || p.src.large;
+  } catch {
+    return `https://picsum.photos/seed/${Math.random()}/1080/1080`;
+  }
+}
+
+function scheduleUnscheduled() {
+  const times = cfg.times || ['07:00', '12:00', '19:00'];
+  const pending = queue.filter(p => p.status === 'pending' && !p.scheduledAt);
+  let dayOff = 0, ti = 0;
+  const now = new Date();
+  for (const post of pending) {
+    let found = null;
+    while (!found) {
+      const d = new Date();
+      d.setDate(d.getDate() + dayOff);
+      const [h, m] = times[ti].split(':').map(Number);
+      d.setHours(h, m, 0, 0);
+      if (d > now) found = d.toISOString();
+      ti++;
+      if (ti >= times.length) { ti = 0; dayOff++; }
+    }
+    post.scheduledAt = found;
+  }
+  S.set('queue', queue);
+}
+
+function appendPreview(post) {
+  const niche = NICHES[post.niche];
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.id = 'prev-' + post.id;
+  div.innerHTML = `
+    <h3>📝 ${esc(post.topic)}</h3>
+    <div class="post-preview" style="margin:10px 0">
+      <img src="${post.imageUrl}" class="post-img" onerror="this.src='https://picsum.photos/60/60'">
+      <div style="flex:1">
+        <div class="post-caption">${esc(post.caption)}</div>
+        <div class="hashtag-row">${niche.hashtags.split(' ').slice(0,6).map(h=>`<span class="ht">${esc(h)}</span>`).join('')}<span style="color:var(--dim);font-size:0.7rem">+他</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="postNow(${post.id})">📤 今すぐ投稿</button>
+      <button class="btn btn-secondary btn-sm" onclick="deletePost(${post.id})">🗑 削除</button>
+    </div>`;
+  document.getElementById('previewArea').appendChild(div);
+}
+
+async function postNow(id) {
+  const post = queue.find(p => p.id == id);
+  if (!post) return;
+  if (!cfg.igUserId || !cfg.igToken) { alert('Instagram API設定を完了してください'); return; }
+  addLog('info', `投稿開始: ${post.topic}`);
+  try {
+    const niche = NICHES[post.niche];
+    const caption = post.caption + '\n\n' + niche.hashtags;
+    addLog('info', 'スライド画像を生成・アップロード中...');
+    const imageUrls = await generatePostImages(post);
+    addLog('info', `${imageUrls.length}枚の画像をInstagramに送信中...`);
+    let creationId;
+    if (imageUrls.length <= 1) {
+      const r = await fetch(`https://graph.facebook.com/v20.0/${cfg.igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.igToken}` },
+        body: JSON.stringify({ image_url: imageUrls[0], caption }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message);
+      creationId = d.id;
+    } else {
+      const childIds = [];
+      for (let i = 0; i < imageUrls.length; i++) {
+        addLog('info', `子メディア作成中 ${i + 1}/${imageUrls.length}...`);
+        const r = await fetch(`https://graph.facebook.com/v20.0/${cfg.igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.igToken}` },
+          body: JSON.stringify({ image_url: imageUrls[i], media_type: 'IMAGE', is_carousel_item: true }),
+        });
+        const d = await r.json();
+        if (d.error) throw new Error(`スライド${i+1}エラー: ${d.error.message}`);
+        childIds.push(d.id);
+        await delay(800);
+      }
+      addLog('info', 'カルーセルを作成中...');
+      const carRes = await fetch(`https://graph.facebook.com/v20.0/${cfg.igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.igToken}` },
+        body: JSON.stringify({ media_type: 'CAROUSEL', children: childIds, caption }),
+      });
+      const carData = await carRes.json();
+      if (carData.error) throw new Error(carData.error.message);
+      creationId = carData.id;
+    }
+    const pubRes = await fetch(`https://graph.facebook.com/v20.0/${cfg.igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `Bearer ${cfg.igToken}` },
+      body: new URLSearchParams({ creation_id: creationId }),
+    });
+    const pData = await pubRes.json();
+    if (pData.error) throw new Error(pData.error.message);
+    post.status = 'posted';
+    post.postedAt = new Date().toISOString();
+    post.igId = pData.id;
+    S.set('queue', queue);
+    addLog('success', `✅ 投稿成功: ${post.topic}`);
+    renderQueue();
+    updateStats();
+  } catch (e) {
+    post.status = 'failed';
+    post.errMsg = e.message;
+    S.set('queue', queue);
+    addLog('error', `❌ 投稿失敗: ${post.topic} — ${e.message}`);
+    renderQueue();
+  }
+}
+
+function getConceptEmoji(text) {
+  const map = [
+    [/効率|時短|速|自動|倍速/, '⚡'],
+    [/稼|収入|副業|お金|節約|投資|NISA|資産|年収/, '💰'],
+    [/AI|ChatGPT|Claude|プロンプト|Notion|Perplexity/, '🤖'],
+    [/スキル|学|勉強|習得|読書/, '📚'],
+    [/仕事|業務|会社|職場|キャリア|昇進/, '💼'],
+    [/健康|運動|ダイエット|睡眠|食事/, '💪'],
+    [/習慣|継続|毎日|ルーティン/, '🔄'],
+    [/人間関係|コミュニケーション|話し方|交渉/, '🤝'],
+    [/成長|成功|目標|達成/, '🎯'],
+    [/アイデア|方法|コツ|テクニック/, '💡'],
+    [/注意|失敗|NG|よくある/, '⚠️'],
+    [/チェック|確認|完了|ステップ/, '✅'],
+    [/時間|分|朝|夜|スケジュール/, '⏰'],
+    [/メンタル|ストレス|不安|悩み/, '🧘'],
+    [/SNS|Instagram|フォロワー|発信/, '📱'],
+  ];
+  for (const [re, em] of map) if (re.test(text)) return em;
+  return '✨';
+}
+
+
+function parseCaption(caption) {
+  const lines = caption.split('\n').map(l => l.trim()).filter(Boolean);
+  let title = '', problem = '';
+  const points = [];
+  let cur = null;
+  const isPoint = l => /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(l) || /^\d+[️⃣]/.test(l) || /^[1-6][\.．、]\s/.test(l);
+  const isBullet = l => /^[・•]/.test(l) || /^[-\*]\s/.test(l);
+  const isSep = l => /^[━─=＝]{2,}/.test(l) || l.length < 2;
+  const cleanHead = l => l.replace(/^[①②③④⑤⑥⑦⑧⑨⑩]\s*/, '').replace(/^\d+[️⃣]?\s*[\.．、]?\s*/, '').replace(/\*\*/g, '').trim();
+  const cleanBullet = l => l.replace(/^[・•\-\*]\s*/, '').replace(/\*\*/g, '').replace(/^【.+?】\s*/, '').trim();
+  const SKIP_LABELS = new Set(['タイトル', '課題', '必須フォーマット', '絶対ルール', '出力フォーマット']);
+  for (const line of lines) {
+    if (!title) {
+      // 【タイトル】実際の内容 → 内容を取得
+      const withLabel = line.match(/^【タイトル】\s*(.+)/);
+      if (withLabel) { title = withLabel[1].replace(/\*\*/g, '').trim(); continue; }
+      // 【実際のタイトル内容】 → そのまま取得（ラベル語は除外）
+      const m = line.match(/【(.+?)】/);
+      if (m && m[1].length > 2 && !SKIP_LABELS.has(m[1])) { title = m[1]; continue; }
+    }
+    if (!problem) {
+      const inline = line.match(/^【課題】\s*(.+)/);
+      if (inline) { problem = inline[1].trim(); continue; }
+      if (line === '【課題】') continue;
+    }
+    if (isPoint(line)) {
+      if (cur) points.push(cur);
+      cur = { heading: cleanHead(line), bullets: [] };
+    } else if (cur && isBullet(line)) {
+      const b = cleanBullet(line);
+      if (b.length > 3 && cur.bullets.length < 3) cur.bullets.push(b);
+    } else if (cur && !isSep(line) && cur.bullets.length === 0) {
+      const clean = line.replace(/[💾📌✅🔥💡⚡👆→←▶◆■●]/g, '').trim();
+      if (clean.length > 8 && !/保存して|フォロー/.test(clean)) cur.bullets.push(clean.slice(0, 70));
+    }
+  }
+  if (cur) points.push(cur);
+  if (!title && lines.length > 0) title = lines[0].replace(/[【】「」『』\*]/g, '').trim();
+  return { title: title || caption.slice(0, 40), problem, points: points.slice(0, 5) };
+}
+
+function wrapJP(ctx, text, maxW) {
+  if (!text || ctx.measureText(text).width <= maxW) return [text || ''];
+  const punc = new Set([...'。、！？…・）】」』']);
+  const lines = [];
+  let rem = text;
+  while (ctx.measureText(rem).width > maxW) {
+    let lo = 1, hi = rem.length - 1, cut = 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (ctx.measureText(rem.slice(0, mid)).width <= maxW) { cut = mid; lo = mid + 1; }
+      else hi = mid - 1;
+    }
+    let best = cut;
+    for (let j = Math.min(cut, rem.length - 1); j >= Math.max(1, cut - 8); j--) {
+      if (punc.has(rem[j - 1])) { best = j; break; }
+    }
+    lines.push(rem.slice(0, best));
+    rem = rem.slice(best);
+  }
+  if (rem) lines.push(rem);
+  return lines;
+}
+
+function ctxWrap(ctx, text, cx, y, maxW, lh) {
+  let line = '', cy = y;
+  for (const ch of [...text]) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, cx, cy); line = ch; cy += lh;
+    } else { line = test; }
+  }
+  if (line) ctx.fillText(line, cx, cy);
+  return cy + lh;
+}
+
+function drawSlide(type, data, nicheKey) {
+  const W = 1080;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = W;
+  const c = cv.getContext('2d');
+
+  const rRect = (x,y,w,h,r) => {
+    c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.arcTo(x+w,y,x+w,y+r,r);
+    c.lineTo(x+w,y+h-r);c.arcTo(x+w,y+h,x+w-r,y+h,r);
+    c.lineTo(x+r,y+h);c.arcTo(x,y+h,x,y+h-r,r);c.lineTo(x,y+r);c.arcTo(x,y,x+r,y,r);c.closePath();
+  };
+  const sh = (b,a,ox=0,oy=6) => { c.shadowColor=`rgba(0,0,0,${a})`;c.shadowBlur=b;c.shadowOffsetX=ox;c.shadowOffsetY=oy; };
+  const noSh = () => { c.shadowColor='transparent';c.shadowBlur=0;c.shadowOffsetX=0;c.shadowOffsetY=0; };
+
+  const pals = {
+    ai:    { g1:'#0D0B26', g2:'#1B1444', g3:'#240F52', a1:'#818CF8', a2:'#F472B6', dk:'#1E1B4B' },
+    money: { g1:'#031A0E', g2:'#052E16', g3:'#064E3B', a1:'#34D399', a2:'#A3E635', dk:'#14532D' },
+    biz:   { g1:'#17100A', g2:'#251A0C', g3:'#1A0A00', a1:'#FB923C', a2:'#FCD34D', dk:'#431407' },
+    life:  { g1:'#1A0B2E', g2:'#2E1065', g3:'#3B0764', a1:'#E879F9', a2:'#FB7185', dk:'#4A044E' },
+  };
+  const p = pals[nicheKey] || pals.ai;
+  const icons = { ai:'🤖', money:'💰', biz:'📈', life:'✨' };
+  const icon = icons[nicheKey] || '✨';
+  const numMap = { '①':1,'②':2,'③':3,'④':4,'⑤':5 };
+
+  const gH = (y) => { const g=c.createLinearGradient(0,y,W,y);g.addColorStop(0,p.a1);g.addColorStop(1,p.a2);return g; };
+  const gRad = (x,y,r0,r1,c1,c2) => { const g=c.createRadialGradient(x,y,r0,x,y,r1);g.addColorStop(0,c1);g.addColorStop(1,c2);return g; };
+
+  const darkBg = () => {
+    const bg = c.createLinearGradient(0,0,W*0.5,W);
+    bg.addColorStop(0,p.g1); bg.addColorStop(0.6,p.g2); bg.addColorStop(1,p.g3);
+    c.fillStyle=bg; c.fillRect(0,0,W,W);
+    c.save(); c.globalAlpha=0.18;
+    c.fillStyle=gRad(W*0.87,W*0.09,0,420,p.a1,'transparent'); c.fillRect(0,0,W,W);
+    c.fillStyle=gRad(W*0.07,W*0.91,0,340,p.a2,'transparent'); c.fillRect(0,0,W,W);
+    c.restore();
+  };
+
+  c.textAlign = 'center';
+
+  if (type === 'problem') {
+    darkBg();
+    c.fillStyle='rgba(255,255,255,0.08)'; rRect(W/2-240,70,480,60,30); c.fill();
+    c.fillStyle='rgba(255,255,255,0.55)'; c.font='bold 28px sans-serif';
+    c.fillText('💭  こんな状況、心当たりありませんか？',W/2,109);
+    c.strokeStyle='rgba(255,255,255,0.08)'; c.lineWidth=1; c.setLineDash([10,8]);
+    c.beginPath(); c.moveTo(120,152); c.lineTo(W-120,152); c.stroke(); c.setLineDash([]);
+    c.font='bold 52px sans-serif';
+    const pLines=wrapJP(c,data.problem||'',W-160);
+    const pSY=460-pLines.length*44;
+    pLines.forEach((ln,i)=>{
+      c.fillStyle=i===0?gH(pSY+i*70):'rgba(255,255,255,0.88)';
+      c.font='bold 52px sans-serif'; c.fillText(ln,W/2,pSY+i*70);
+    });
+    c.fillStyle='rgba(255,255,255,0.22)'; c.font='64px sans-serif'; c.fillText('↓',W/2,648);
+    c.fillStyle='rgba(255,255,255,0.75)'; c.font='bold 36px sans-serif';
+    c.fillText('それ、この投稿で全部解決します',W/2,726);
+    c.fillStyle=gH(W-80); c.fillRect(80,W-86,W-160,6);
+
+  } else if (type === 'title') {
+    darkBg();
+    c.save(); c.globalAlpha=0.055;
+    c.fillStyle='#fff'; c.font='bold 740px sans-serif'; c.textAlign='center';
+    c.fillText('5',W/2+100,W*0.86); c.restore(); c.textAlign='center';
+    c.fillStyle=gH(70); c.fillRect(80,68,W-160,6);
+    c.fillStyle='rgba(255,255,255,0.09)'; rRect(W/2-140,108,280,58,29); c.fill();
+    c.fillStyle='rgba(255,255,255,0.65)'; c.font='bold 28px sans-serif';
+    c.fillText(`${icon} ${NICHES[nicheKey]?.name||''}`,W/2,146);
+    c.font='bold 66px sans-serif';
+    const tLines=wrapJP(c,data.title||'',W-140);
+    const tsy=330-(tLines.length-1)*42;
+    tLines.forEach((ln,i)=>{
+      c.fillStyle=i===0?gH(tsy+i*84):'rgba(255,255,255,0.92)';
+      c.font='bold 66px sans-serif'; c.fillText(ln,W/2,tsy+i*84);
+    });
+    sh(28,0.5,0,10); c.fillStyle=gH(W/2); rRect(W/2-188,792,376,78,39); c.fill(); noSh();
+    c.fillStyle='#fff'; c.font='bold 32px sans-serif'; c.fillText('スワイプして読む →',W/2,844);
+    c.fillStyle=gH(W-80); c.fillRect(80,W-86,W-160,6);
+
+  } else if (type === 'intro') {
+    darkBg();
+    sh(20,0.4); c.fillStyle=gH(104); rRect(W/2-150,70,300,68,34); c.fill(); noSh();
+    c.fillStyle='#fff'; c.font='bold 34px sans-serif'; c.fillText('📋  もくじ',W/2,116);
+    c.fillStyle='rgba(255,255,255,0.45)'; c.font='26px sans-serif';
+    let sub=data.topic||'';
+    if(c.measureText(sub).width>W-160){while(c.measureText(sub).width>W-190&&sub.length>4)sub=sub.slice(0,-1);sub+='…';}
+    c.fillText(sub,W/2,178);
+    c.strokeStyle='rgba(255,255,255,0.1)'; c.lineWidth=1; c.setLineDash([10,8]);
+    c.beginPath(); c.moveTo(80,202); c.lineTo(W-80,202); c.stroke(); c.setLineDash([]);
+    const pts=(data.points||[]).slice(0,5);
+    const iH=162, iSY=220;
+    pts.forEach((pt,i)=>{
+      const iy=iSY+i*iH, cy2=iy+iH/2;
+      c.fillStyle=i%2===0?'rgba(255,255,255,0.04)':'transparent'; c.fillRect(72,iy,W-144,iH-3);
+      sh(12,0.3); c.fillStyle=gH(cy2); c.beginPath(); c.arc(118,cy2,34,0,Math.PI*2); c.fill(); noSh();
+      c.fillStyle='#fff'; c.font='bold 28px sans-serif'; c.fillText(String(i+1).padStart(2,'0'),118,cy2+28*0.35);
+      c.font='36px serif'; c.fillText(getConceptEmoji(pt.heading||''),190,cy2+36*0.35);
+      c.textAlign='left'; c.fillStyle='rgba(255,255,255,0.92)'; c.font='bold 36px sans-serif';
+      let txt=pt.heading||'';
+      while(c.measureText(txt).width>W-292&&txt.length>4)txt=txt.slice(0,-1);
+      if(txt!==pt.heading)txt+='…';
+      c.fillText(txt,230,cy2+36*0.35); c.textAlign='center';
+    });
+
+  } else if (type === 'point') {
+    const n=numMap[data.num]||1, nb=String(n).padStart(2,'0');
+    const buls=(data.bullets||[]).slice(0,3);
+    c.fillStyle='#F7F8FF'; c.fillRect(0,0,W,W);
+    const topBg=c.createLinearGradient(0,0,W*0.4,262);
+    topBg.addColorStop(0,p.dk); topBg.addColorStop(1,p.g2);
+    c.fillStyle=topBg; c.fillRect(0,0,W,262);
+    c.save(); c.globalAlpha=0.08;
+    c.fillStyle='#fff'; c.font='bold 360px sans-serif'; c.textAlign='right';
+    c.fillText(nb,W-40,298); c.restore(); c.textAlign='center';
+    sh(22,0.5,0,8); c.fillStyle=gH(146); rRect(72,68,148,148,18); c.fill(); noSh();
+    c.fillStyle='#fff'; c.font='bold 76px sans-serif'; c.fillText(nb,146,186);
+    c.font='bold 46px sans-serif';
+    const hdL=wrapJP(c,data.heading||'',W-294).slice(0,2);
+    c.fillStyle='#fff'; hdL.forEach((l,i)=>c.fillText(l,W/2+54,(hdL.length>1?105:148)+i*58));
+    c.fillStyle=gH(262); c.fillRect(72,260,W-144,5);
+    const bSY=272, rH=248;
+    buls.forEach((b,i)=>{
+      const ry=bSY+i*rH, cy3=ry+rH/2;
+      if(i>0){c.strokeStyle='rgba(0,0,0,0.07)';c.lineWidth=1;c.setLineDash([]);c.beginPath();c.moveTo(80,ry);c.lineTo(W-80,ry);c.stroke();}
+      sh(10,0.2,0,4); c.fillStyle=gH(cy3); c.beginPath(); c.arc(118,cy3,30,0,Math.PI*2); c.fill(); noSh();
+      c.fillStyle='#fff'; c.font='bold 26px sans-serif'; c.fillText(String(i+1),118,cy3+26*0.35);
+      const fs=i===0?38:36, lh=52;
+      c.font=`bold ${fs}px sans-serif`;
+      const bLines=wrapJP(c,b,W-256);
+      const firstY=cy3+fs*0.35-(bLines.length-1)*lh/2;
+      c.textAlign='left'; c.fillStyle=i===0?gH(cy3):'#1A1A3E';
+      bLines.forEach((ln,li)=>c.fillText(ln,170,firstY+li*lh));
+      c.textAlign='center';
+    });
+    for(let di=0;di<5;di++){
+      const dx=W/2-64+di*32, dy=W-38;
+      if(di+1===n){c.fillStyle=gH(dy);c.beginPath();c.arc(dx,dy,12,0,Math.PI*2);c.fill();}
+      else{c.fillStyle='rgba(0,0,0,0.14)';c.beginPath();c.arc(dx,dy,7,0,Math.PI*2);c.fill();}
+    }
+
+  } else if (type === 'summary') {
+    darkBg();
+    sh(20,0.4); c.fillStyle=gH(W/2); rRect(72,68,W-144,100,16); c.fill(); noSh();
+    c.fillStyle='#fff'; c.font='bold 50px sans-serif'; c.fillText('📝  まとめ',W/2,134);
+    const pts=(data.points||[]).slice(0,5);
+    const iH2=Math.floor((1000-182)/Math.max(pts.length,1));
+    pts.forEach((pt,i)=>{
+      const iy=182+i*iH2, cy4=iy+iH2/2;
+      c.fillStyle='rgba(255,255,255,0.05)'; rRect(72,iy+3,W-144,iH2-6,12); c.fill();
+      sh(8,0.3); c.fillStyle=gH(cy4); c.beginPath(); c.arc(116,cy4,30,0,Math.PI*2); c.fill(); noSh();
+      c.fillStyle='#fff'; c.font='bold 24px sans-serif'; c.fillText('✓',116,cy4+24*0.35);
+      const efs=iH2>=148?38:32; c.font=`${efs}px serif`; c.fillText(getConceptEmoji(pt.heading||''),180,cy4+efs*0.35);
+      const sfs=iH2>=148?36:30; c.textAlign='left'; c.fillStyle='rgba(255,255,255,0.92)'; c.font=`bold ${sfs}px sans-serif`;
+      let txt=pt.heading||'';
+      while(c.measureText(txt).width>W-268&&txt.length>4)txt=txt.slice(0,-1);
+      if(txt!==pt.heading)txt+='…';
+      c.fillText(txt,218,cy4+sfs*0.35); c.textAlign='center';
+    });
+    c.fillStyle=gH(W-56); c.font='bold 30px sans-serif';
+    c.fillText('💾 保存して何度でも見返そう！',W/2,W-56);
+
+  } else if (type === 'cta') {
+    darkBg();
+    c.save(); c.globalAlpha=0.28;
+    c.fillStyle=gRad(W/2,W*0.37,0,W*0.62,p.a1,'transparent'); c.fillRect(0,0,W,W);
+    c.restore();
+    c.font='132px serif'; c.fillText(icon,W/2,312);
+    c.fillStyle='#fff'; c.font='bold 64px sans-serif'; c.fillText('フォローして',W/2,462);
+    c.fillStyle='rgba(255,255,255,0.65)'; c.font='38px sans-serif'; c.fillText('毎日お役立ち情報を更新中！',W/2,534);
+    sh(32,0.5,0,10); c.fillStyle=gH(W/2); rRect(W/2-228,604,456,116,58); c.fill(); noSh();
+    c.fillStyle='#fff'; c.font='bold 42px sans-serif'; c.fillText('👆 フォローはこちら',W/2,676);
+    c.fillStyle='rgba(255,255,255,0.46)'; c.font='30px sans-serif'; c.fillText('💾 保存して後で見返してね',W/2,796);
+    c.fillStyle='rgba(255,255,255,0.22)'; c.font='26px sans-serif'; c.fillText('← スワイプしてもう一度見る',W/2,W-62);
+    c.fillStyle=gH(W-84); c.fillRect(80,W-86,W-160,6);
+  }
+
+  return cv.toDataURL('image/jpeg',0.92).split(',')[1];
+}
+
+async function uploadToImgBB(base64) {
+  if (!cfg.imgbbKey) throw new Error('ImgBB APIキーを設定してください');
+  const form = new FormData();
+  form.append('key', cfg.imgbbKey);
+  form.append('image', base64);
+  const r = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form });
+  const d = await r.json();
+  if (!d.success) throw new Error('画像アップロード失敗: ' + (d.error?.message || JSON.stringify(d)));
+  return d.data.url;
+}
+
+function getProblemFallback(nicheKey) {
+  const probs = {
+    ai:    ['AIを使いたいけど何から始めれば？まわりに置いていかれてる気がする…', 'AIが普及しているのに活かせず、仕事で差がついてきている気がしませんか？'],
+    money: ['副業を始めたいけど時間も知識もない。将来のお金が漠然と不安じゃないですか？', '頑張っているのにお金が全然増えない。何から始めればいいか分からない…'],
+    biz:   ['仕事を頑張っているのになぜか評価されない。そのモヤモヤ、分かります…', '残業しても成果が出ない。キャリアに行き詰まり感を感じていませんか？'],
+    life:  ['習慣を変えようと思っても三日坊主。また自己嫌悪に…そんな繰り返しじゃないですか？', 'やるべきことは分かっているのになぜか行動できない。そんな悩みありませんか？'],
+  };
+  const arr = probs[nicheKey] || probs.ai;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+async function generatePostImages(post) {
+  const { title, problem, points } = parseCaption(post.caption);
+  const five = Array.from({ length: 5 }, (_, i) => points[i] || { heading: `ポイント ${i + 1}`, bullets: [] });
+  const nums = ['①', '②', '③', '④', '⑤'];
+  const prob = problem || getProblemFallback(post.niche);
+  const slides = [
+    drawSlide('title', { title }, post.niche),
+    drawSlide('problem', { problem: prob }, post.niche),
+    drawSlide('intro', { topic: post.topic, points: five }, post.niche),
+    ...five.map((pt, i) => drawSlide('point', { num: nums[i], heading: pt.heading, bullets: pt.bullets || [] }, post.niche)),
+    drawSlide('summary', { points: five }, post.niche),
+    drawSlide('cta', {}, post.niche),
+  ];
+  const urls = [];
+  for (const b64 of slides) { urls.push(await uploadToImgBB(b64)); await delay(200); }
+  return urls;
+}
+
+function deletePost(id) {
+  queue = queue.filter(p => p.id != id);
+  S.set('queue', queue);
+  document.getElementById('prev-' + id)?.remove();
+  renderQueue();
+  updateStats();
+}
+
+function toggleScheduler() {
+  running ? stopScheduler() : startScheduler();
+}
+
+function startScheduler() {
+  if (!cfg.igUserId || !cfg.igToken) { alert('Instagram API設定を完了してください'); return; }
+  running = true;
+  document.getElementById('schedulerBtn').textContent = '⏹ 停止';
+  document.getElementById('schedulerBtn').className = 'btn btn-danger btn-sm';
+  document.getElementById('schedulerBadge').textContent = '稼働中';
+  document.getElementById('schedulerBadge').className = 'active';
+  addLog('info', 'スケジューラーを開始');
+  checkDue();
+  timer = setInterval(checkDue, 30000);
+}
+
+function stopScheduler() {
+  running = false;
+  clearInterval(timer);
+  document.getElementById('schedulerBtn').textContent = '▶ 開始';
+  document.getElementById('schedulerBtn').className = 'btn btn-primary btn-sm';
+  document.getElementById('schedulerBadge').textContent = '停止中';
+  document.getElementById('schedulerBadge').className = '';
+  document.getElementById('nextPostInfo').textContent = 'スケジューラーを開始すると次の投稿情報が表示されます';
+  addLog('info', 'スケジューラーを停止');
+}
+
+async function checkDue() {
+  const now = new Date();
+  const pending = queue.filter(p => p.status === 'pending' && p.scheduledAt);
+  const next = pending
+    .map(p => ({ ...p, t: new Date(p.scheduledAt) }))
+    .filter(p => p.t > now)
+    .sort((a, b) => a.t - b.t)[0];
+  const info = document.getElementById('nextPostInfo');
+  if (next) {
+    const diff = Math.round((next.t - now) / 60000);
+    const ts = next.t.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    info.innerHTML = `<span class="dot-active"></span>次の投稿: <strong style="color:var(--accent)">${ts}</strong>（約${diff}分後）— ${esc(next.topic)}`;
+  } else if (!pending.length) {
+    info.textContent = 'キューが空です。生成タブで投稿を追加してください。';
+  }
+  const due = pending.filter(p => new Date(p.scheduledAt) <= now);
+  for (const p of due) {
+    await postNow(p.id);
+    await delay(3000);
+  }
+  if (due.length) renderQueue();
+}
+
+function renderQueue() {
+  const c = document.getElementById('queueList');
+  const pending = queue.filter(p => p.status === 'pending')
+    .sort((a, b) => new Date(a.scheduledAt || '9999') - new Date(b.scheduledAt || '9999'));
+  if (!pending.length) {
+    c.innerHTML = `<div class="empty-state"><div class="ic">📭</div><div>キューが空です</div><div style="font-size:0.78rem;margin-top:6px">生成タブで投稿を追加してください</div></div>`;
+    updateStats();
+    return;
+  }
+  c.innerHTML = pending.map(p => {
+    const ts = p.scheduledAt
+      ? new Date(p.scheduledAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '未スケジュール';
+    return `<div class="post-card">
+      <div class="post-card-hd">
+        <span class="post-time">${ts}</span>
+        <span class="badge badge-pending">待機中</span>
+      </div>
+      <div class="post-card-bd">
+        <div class="post-preview">
+          <img src="${p.imageUrl}" class="post-img" onerror="this.src='https://picsum.photos/60/60'">
+          <div style="flex:1">
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:3px">${esc(p.topic)}</div>
+            <div class="post-caption">${esc(p.caption.slice(0, 120))}...</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="postNow(${p.id})">📤 今すぐ投稿</button>
+          <button class="btn btn-secondary btn-sm" onclick="deletePost(${p.id})">🗑 削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+function renderHistory() {
+  const posted = queue.filter(p => p.status === 'posted').length;
+  const failed = queue.filter(p => p.status === 'failed').length;
+  const days = posted > 0
+    ? Math.ceil((new Date() - new Date(queue.filter(p=>p.status==='posted').sort((a,b)=>new Date(a.postedAt)-new Date(b.postedAt))[0]?.postedAt)) / 86400000)
+    : 0;
+  document.getElementById('hPosted').textContent = posted;
+  document.getElementById('hFailed').textContent = failed;
+  document.getElementById('hDays').textContent = days;
+  const c = document.getElementById('logArea');
+  if (!logs.length) {
+    c.innerHTML = `<div class="empty-state"><div class="ic">📊</div><div>まだ投稿履歴がありません</div></div>`;
+    return;
+  }
+  c.innerHTML = [...logs].reverse().slice(0, 100).map(l =>
+    `<div class="log-item ${l.type}"><div class="log-t">${new Date(l.ts).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div><div class="log-m">${esc(l.msg)}</div></div>`
+  ).join('');
+}
+
+function clearLogs() {
+  if (!confirm('ログをクリアしますか？')) return;
+  logs = [];
+  S.set('logs', logs);
+  renderHistory();
+}
+
+function addLog(type, msg) {
+  logs.push({ type, msg, ts: new Date().toISOString() });
+  if (logs.length > 300) logs = logs.slice(-300);
+  S.set('logs', logs);
+}
+
+function updateStats() {
+  const p = queue.filter(q => q.status === 'pending').length;
+  const s = queue.filter(q => q.status === 'posted').length;
+  document.getElementById('sPending').textContent = p;
+  document.getElementById('sPosted').textContent = s;
+  document.getElementById('sTotal').textContent = queue.length;
+}
+
+function showMsg(id, html, type) {
+  const el = document.getElementById(id);
+  const color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--text)';
+  el.innerHTML = `<span style="color:${color}">${html}</span>`;
+  if (type) setTimeout(() => { el.innerHTML = ''; }, 4000);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+loadSettings();
+updateStats();
+</script>
+</body>
+</html>

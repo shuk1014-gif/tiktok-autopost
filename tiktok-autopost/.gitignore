@@ -1,0 +1,7 @@
+.env
+.tiktok_token.json
+__pycache__/
+*.pyc
+output/
+autopost.log
+.DS_Store

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>TikTok 認証</title>
+<style>
+  body { font-family: sans-serif; max-width: 600px; margin: 60px auto; padding: 20px; }
+  code { background: #f0f0f0; padding: 12px; display: block; word-break: break-all; font-size: 1.1rem; border-radius: 6px; margin: 12px 0; }
+  .box { border: 2px solid #fe2c55; border-radius: 8px; padding: 20px; margin-top: 24px; }
+  h2 { color: #fe2c55; }
+</style>
+</head>
+<body>
+<h1>TikTok 認証コード</h1>
+<div class="box">
+  <h2>以下のコードをターミナルに貼り付けてください</h2>
+  <code id="code">読み込み中...</code>
+  <button onclick="navigator.clipboard.writeText(document.getElementById('code').textContent)">コピー</button>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    document.getElementById('code').textContent = code;
+  } else {
+    document.getElementById('code').textContent = 'コードが見つかりません: ' + window.location.search;
+  }
+</script>
+</body>
+</html>
