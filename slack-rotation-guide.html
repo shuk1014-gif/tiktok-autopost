@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Slack 順番メンション ワークフロー 手順書</title>
+<title>Slack 順番メンション ワークフロー 手順書（2グループ対応）</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; background: #f5f5f5; color: #333; line-height: 1.7; }
@@ -51,7 +51,7 @@
 <div class="container">
 
   <h1>Slack 順番メンション ワークフロー 手順書</h1>
-  <p class="subtitle">ボタンを押すたびにA→B→C→D→A…と順番にメンションされる仕組みの構築手順</p>
+  <p class="subtitle">2つのボタンがそれぞれ独立して、グループ内で順番にメンションされる仕組みの構築手順</p>
 
   <div class="toc">
     <h2>目次</h2>
@@ -72,16 +72,18 @@
   <h2 id="overview">全体の仕組み</h2>
 
   <div class="flow">
-    <div class="flow-box">① Slackの<br>ボタンを押す</div>
+    <div class="flow-box">① ボタン①または<br>ボタン②を押す</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box">② Slack が<br>GASへ通知</div>
+    <div class="flow-box">② Slack が<br>GASへ通知<br>（どちらのボタンか含む）</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box">③ GASが<br>スプレッドシートを確認</div>
+    <div class="flow-box">③ GASが対応する<br>グループのカウンターを確認</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box">④ 次の担当者を<br>メンション投稿</div>
+    <div class="flow-box">④ そのグループの<br>次の担当者をメンション</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box">⑤ 番号を<br>+1して保存</div>
+    <div class="flow-box">⑤ そのグループの<br>番号だけ+1して保存</div>
   </div>
+
+  <div class="note"><strong>ポイント：</strong>グループ①とグループ②はそれぞれ独立してカウントされます。片方のボタンを押しても、もう片方の順番には影響しません。スプレッドシートのA1（グループ①）とA2（グループ②）でそれぞれ管理します。</div>
 
   <table>
     <tr><th>使うサービス</th><th>役割</th><th>費用</th></tr>
@@ -137,9 +139,14 @@
   </div>
 
   <div class="step">
-    <span class="step-number">3</span><span class="step-title">A1セルに「0」を入力する</span>
-    <p style="margin-top:8px;">A1セルをクリックして <code>0</code> と入力しEnter。これが「今何番目か」を記録するセルです。</p>
-    <div class="note"><strong>意味：</strong>0=Aさんの番、1=Bさんの番、2=Cさんの番、3=Dさんの番 を表します。</div>
+    <span class="step-number">3</span><span class="step-title">A1・A2セルに「0」を入力する</span>
+    <p style="margin-top:8px;">以下の2つのセルにそれぞれ <code>0</code> を入力します。</p>
+    <table>
+      <tr><th>セル</th><th>役割</th></tr>
+      <tr><td><code>A1</code></td><td>グループ①の現在の番号（0から始まる）</td></tr>
+      <tr><td><code>A2</code></td><td>グループ②の現在の番号（0から始まる）</td></tr>
+    </table>
+    <div class="note"><strong>意味：</strong>0=1番目の人の番、1=2番目の人の番、2=3番目の人の番… を表します。各グループ独立して管理されます。</div>
   </div>
 
   <div class="step">
@@ -165,16 +172,25 @@
 
   <div class="step">
     <span class="step-number">3</span><span class="step-title">以下のコードをそのまま貼り付ける</span>
-    <p style="margin-top:8px;"><strong>★ 赤字のコメント箇所を自分の情報に書き換えてください。</strong></p>
+    <p style="margin-top:8px;"><strong>★ 上部の「ここを書き換えてください」の箇所だけ自分の情報に変更してください。</strong></p>
 <pre><span class="comment">// ===== ここを書き換えてください =====</span>
 <span class="keyword">const</span> SHEET_ID = <span class="string">'スプレッドシートのIDをここに貼る'</span>;
 <span class="keyword">const</span> CHANNEL_ID = <span class="string">'SlackチャンネルのIDをここに貼る'</span>;
 
-<span class="keyword">const</span> MEMBERS = [
+<span class="comment">// グループ①のメンバー（ボタン①を押すとこの中で順番に回る）</span>
+<span class="keyword">const</span> MEMBERS_1 = [
   { name: <span class="string">'Aさん'</span>, id: <span class="string">'AさんのSlackユーザーID'</span> },
   { name: <span class="string">'Bさん'</span>, id: <span class="string">'BさんのSlackユーザーID'</span> },
   { name: <span class="string">'Cさん'</span>, id: <span class="string">'CさんのSlackユーザーID'</span> },
   { name: <span class="string">'Dさん'</span>, id: <span class="string">'DさんのSlackユーザーID'</span> },
+];
+
+<span class="comment">// グループ②のメンバー（ボタン②を押すとこの中で順番に回る）</span>
+<span class="keyword">const</span> MEMBERS_2 = [
+  { name: <span class="string">'Eさん'</span>, id: <span class="string">'EさんのSlackユーザーID'</span> },
+  { name: <span class="string">'Fさん'</span>, id: <span class="string">'FさんのSlackユーザーID'</span> },
+  { name: <span class="string">'Gさん'</span>, id: <span class="string">'GさんのSlackユーザーID'</span> },
+  { name: <span class="string">'Hさん'</span>, id: <span class="string">'HさんのSlackユーザーID'</span> },
 ];
 <span class="comment">// ===================================</span>
 
@@ -185,7 +201,6 @@
 <span class="keyword">function</span> doPost(e) {
   <span class="keyword">var</span> body = e.postData.contents;
 
-  <span class="comment">// Slackの認証チェック（URLの確認用）</span>
   <span class="keyword">try</span> {
     <span class="keyword">var</span> json = JSON.parse(body);
     <span class="keyword">if</span> (json.type === <span class="string">'url_verification'</span>) {
@@ -194,17 +209,30 @@
     }
   } <span class="keyword">catch</span>(e) {}
 
-  <span class="comment">// ボタンが押されたときの処理</span>
   <span class="keyword">var</span> decoded = decodeURIComponent(body.replace(<span class="string">'payload='</span>, <span class="string">''</span>));
   <span class="keyword">var</span> payload = JSON.parse(decoded);
 
   <span class="keyword">if</span> (payload.type === <span class="string">'block_actions'</span>) {
+    <span class="keyword">var</span> actionId = payload.actions[0].action_id;
     <span class="keyword">var</span> lock = LockService.getScriptLock();
     lock.tryLock(5000);
 
     <span class="keyword">var</span> sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(<span class="string">'State'</span>);
-    <span class="keyword">var</span> idx = Number(sheet.getRange(<span class="string">'A1'</span>).getValue());
-    <span class="keyword">var</span> member = MEMBERS[idx];
+
+    <span class="keyword">var</span> members, cell;
+    <span class="keyword">if</span> (actionId === <span class="string">'mention_group_1'</span>) {
+      members = MEMBERS_1;
+      cell = <span class="string">'A1'</span>;
+    } <span class="keyword">else if</span> (actionId === <span class="string">'mention_group_2'</span>) {
+      members = MEMBERS_2;
+      cell = <span class="string">'A2'</span>;
+    } <span class="keyword">else</span> {
+      lock.releaseLock();
+      <span class="keyword">return</span> ContentService.createTextOutput(<span class="string">'OK'</span>);
+    }
+
+    <span class="keyword">var</span> idx = Number(sheet.getRange(cell).getValue());
+    <span class="keyword">var</span> member = members[idx];
 
     UrlFetchApp.fetch(<span class="string">'https://slack.com/api/chat.postMessage'</span>, {
       method: <span class="string">'post'</span>,
@@ -216,14 +244,14 @@
       }),
     });
 
-    sheet.getRange(<span class="string">'A1'</span>).setValue((idx + <span class="string">1</span>) % MEMBERS.length);
+    sheet.getRange(cell).setValue((idx + 1) % members.length);
     lock.releaseLock();
   }
 
   <span class="keyword">return</span> ContentService.createTextOutput(<span class="string">'OK'</span>);
 }
 
-<span class="keyword">function</span> postInitialButton() {
+<span class="keyword">function</span> postInitialButtons() {
   UrlFetchApp.fetch(<span class="string">'https://slack.com/api/chat.postMessage'</span>, {
     method: <span class="string">'post'</span>,
     contentType: <span class="string">'application/json'</span>,
@@ -231,18 +259,32 @@
     payload: JSON.stringify({
       channel: CHANNEL_ID,
       text: <span class="string">'担当者メンションボタン'</span>,
-      blocks: [{
-        type: <span class="string">'actions'</span>,
-        elements: [{
-          type: <span class="string">'button'</span>,
-          text: { type: <span class="string">'plain_text'</span>, text: <span class="string">'次の担当者にメンション'</span> },
-          action_id: <span class="string">'mention_next'</span>,
-          style: <span class="string">'primary'</span>,
-        }],
-      }],
+      blocks: [
+        {
+          type: <span class="string">'section'</span>,
+          text: { type: <span class="string">'mrkdwn'</span>, text: <span class="string">'*担当者メンション*'</span> },
+        },
+        {
+          type: <span class="string">'actions'</span>,
+          elements: [
+            {
+              type: <span class="string">'button'</span>,
+              text: { type: <span class="string">'plain_text'</span>, text: <span class="string">'①グループ① 次の担当者へ'</span> },
+              action_id: <span class="string">'mention_group_1'</span>,
+              style: <span class="string">'primary'</span>,
+            },
+            {
+              type: <span class="string">'button'</span>,
+              text: { type: <span class="string">'plain_text'</span>, text: <span class="string">'②グループ② 次の担当者へ'</span> },
+              action_id: <span class="string">'mention_group_2'</span>,
+            },
+          ],
+        },
+      ],
     }),
   });
 }</pre>
+    <div class="note"><strong>人数を変えたい場合：</strong><code>MEMBERS_1</code> や <code>MEMBERS_2</code> の行を追加・削除するだけでOKです。グループごとに人数が違っても動作します。</div>
   </div>
 
   <div class="step">
@@ -366,7 +408,7 @@
     <span class="step-number">1</span><span class="step-title">GASエディタで関数を実行する</span>
     <ol>
       <li>GASエディタを開く</li>
-      <li>画面上部の関数選択ドロップダウンで <code>postInitialButton</code> を選択</li>
+      <li>画面上部の関数選択ドロップダウンで <code>postInitialButtons</code> を選択</li>
       <li>「▶ 実行」ボタンをクリック</li>
     </ol>
     <div class="note"><strong>初回のみ：</strong>権限の確認が出たら「許可」してください。</div>
@@ -374,7 +416,7 @@
 
   <div class="step">
     <span class="step-number">2</span><span class="step-title">Slackを確認する</span>
-    <p style="margin-top:8px;">指定したチャンネルに「次の担当者にメンション」というボタンが投稿されていれば成功です。</p>
+    <p style="margin-top:8px;">指定したチャンネルに「①グループ① 次の担当者へ」「②グループ② 次の担当者へ」の2つのボタンが並んで投稿されていれば成功です。</p>
     <div class="check"><strong>ボタンはこの1回だけ投稿すればOKです。</strong>メッセージは削除しないようにしましょう。</div>
   </div>
 
@@ -383,24 +425,30 @@
 
   <div class="step">
     <span class="step-number">1</span><span class="step-title">ボタンを押してみる</span>
-    <p style="margin-top:8px;">Slackのボタンをクリックしてください。</p>
-    <ul>
-      <li>1回目：Aさんにメンションされる</li>
-      <li>2回目：Bさんにメンションされる</li>
-      <li>3回目：Cさんにメンションされる</li>
-      <li>4回目：Dさんにメンションされる</li>
-      <li>5回目：Aさんに戻る</li>
-    </ul>
+    <p style="margin-top:8px;">それぞれのボタンをクリックして確認してください。</p>
+    <table>
+      <tr><th>操作</th><th>結果</th></tr>
+      <tr><td>ボタン①を1回目</td><td>グループ①の1人目（Aさん）にメンション</td></tr>
+      <tr><td>ボタン①を2回目</td><td>グループ①の2人目（Bさん）にメンション</td></tr>
+      <tr><td>ボタン②を1回目</td><td>グループ②の1人目（Eさん）にメンション ← ①とは独立</td></tr>
+      <tr><td>ボタン①を3回目</td><td>グループ①の3人目（Cさん）にメンション ← ②の影響なし</td></tr>
+    </table>
   </div>
 
   <div class="step">
     <span class="step-number">2</span><span class="step-title">スプレッドシートも確認する</span>
-    <p style="margin-top:8px;">A1セルの数字がボタンを押すたびに 0 → 1 → 2 → 3 → 0 … と変わっていれば正常です。</p>
+    <p style="margin-top:8px;">ボタン①を押すとA1セル、ボタン②を押すとA2セルの数字だけが変わっていれば正常です。</p>
   </div>
 
   <div class="step">
     <span class="step-number">3</span><span class="step-title">担当者をリセットしたい場合</span>
-    <p style="margin-top:8px;">スプレッドシートのA1セルを <code>0</code> に書き換えるだけでAさんからリスタートできます。</p>
+    <p style="margin-top:8px;">リセットしたいグループのセルを <code>0</code> に書き換えるだけで最初の人からリスタートできます。</p>
+    <table>
+      <tr><th>リセットしたいグループ</th><th>操作</th></tr>
+      <tr><td>グループ①だけリセット</td><td>A1セルを <code>0</code> に変更</td></tr>
+      <tr><td>グループ②だけリセット</td><td>A2セルを <code>0</code> に変更</td></tr>
+      <tr><td>両方リセット</td><td>A1とA2の両方を <code>0</code> に変更</td></tr>
+    </table>
   </div>
 
   <!-- TROUBLE -->
