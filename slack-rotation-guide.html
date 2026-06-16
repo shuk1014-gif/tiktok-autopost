@@ -240,7 +240,9 @@
       headers: { <span class="string">'Authorization'</span>: <span class="string">'Bearer '</span> + getSlackToken() },
       payload: JSON.stringify({
         channel: CHANNEL_ID,
-        text: <span class="string">'&lt;@'</span> + member.id + <span class="string">'&gt; 担当です！'</span>,
+        text: actionId === <span class="string">'mention_group_1'</span>
+        ? <span class="string">'次の正社員の担当者は&lt;@'</span> + member.id + <span class="string">'&gt;です。対応したらボタンを押してください。'</span>
+        : <span class="string">'次のパートの担当者は&lt;@'</span> + member.id + <span class="string">'&gt;さんです。対応したらボタンを押してください。'</span>,
       }),
     });
 
