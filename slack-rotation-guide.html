@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slack 順番メンション ワークフロー 手順書</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; background: #f5f5f5; color: #333; line-height: 1.7; }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 1.8rem; color: #1a1a2e; border-bottom: 3px solid #4a90d9; padding-bottom: 12px; margin-bottom: 8px; }
+  .subtitle { color: #666; font-size: 0.95rem; margin-bottom: 40px; }
+  h2 { font-size: 1.25rem; color: #fff; background: #4a90d9; padding: 10px 16px; border-radius: 6px; margin: 40px 0 16px; }
+  h3 { font-size: 1rem; color: #2c3e50; border-left: 4px solid #4a90d9; padding-left: 10px; margin: 24px 0 10px; }
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; }
+  .step { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; }
+  .step-number { display: inline-block; background: #4a90d9; color: #fff; font-weight: bold; border-radius: 50%; width: 28px; height: 28px; text-align: center; line-height: 28px; margin-right: 8px; font-size: 0.9rem; }
+  .step-title { font-weight: bold; font-size: 1.05rem; }
+  code { background: #eef2f7; border: 1px solid #ccd; border-radius: 4px; padding: 1px 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; color: #c0392b; }
+  pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 20px; overflow-x: auto; margin: 12px 0; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.6; }
+  pre .comment { color: #6c7086; }
+  pre .string { color: #a6e3a1; }
+  pre .keyword { color: #89b4fa; }
+  .note { background: #fff8e1; border-left: 4px solid #f5a623; border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 12px 0; font-size: 0.93rem; }
+  .note strong { color: #e67e00; }
+  .warn { background: #fdecea; border-left: 4px solid #e74c3c; border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 12px 0; font-size: 0.93rem; }
+  .warn strong { color: #c0392b; }
+  .check { background: #e8f8f0; border-left: 4px solid #2ecc71; border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 12px 0; font-size: 0.93rem; }
+  .img-placeholder { background: #eef2f7; border: 2px dashed #aab; border-radius: 6px; padding: 20px; text-align: center; color: #888; margin: 12px 0; font-size: 0.9rem; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92rem; }
+  th { background: #4a90d9; color: #fff; padding: 9px 12px; text-align: left; }
+  td { padding: 9px 12px; border-bottom: 1px solid #dde; }
+  tr:nth-child(even) td { background: #f8f9ff; }
+  .toc { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; }
+  .toc h2 { background: none; color: #2c3e50; padding: 0; margin: 0 0 12px; font-size: 1.1rem; border-radius: 0; }
+  .toc ol { padding-left: 20px; }
+  .toc a { color: #4a90d9; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .badge { display: inline-block; background: #e8f0fe; color: #4a90d9; border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: bold; margin-left: 6px; vertical-align: middle; }
+  .badge.green { background: #e8f8f0; color: #27ae60; }
+  .badge.orange { background: #fff3e0; color: #e67e00; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+  .flow-box { background: #fff; border: 2px solid #4a90d9; border-radius: 8px; padding: 8px 14px; font-size: 0.88rem; text-align: center; }
+  .flow-arrow { color: #4a90d9; font-size: 1.2rem; }
+  footer { text-align: center; color: #aaa; font-size: 0.85rem; margin-top: 60px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Slack 順番メンション ワークフロー 手順書</h1>
+  <p class="subtitle">ボタンを押すたびにA→B→C→D→A…と順番にメンションされる仕組みの構築手順</p>
+
+  <div class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#overview">全体の仕組み</a></li>
+      <li><a href="#prepare">事前に準備するもの</a></li>
+      <li><a href="#sheet">STEP 1：Googleスプレッドシートを作る</a></li>
+      <li><a href="#gas">STEP 2：Google Apps Script を書く</a></li>
+      <li><a href="#deploy">STEP 3：GAS をウェブアプリとして公開する</a></li>
+      <li><a href="#slack-app">STEP 4：Slack App を作成・設定する</a></li>
+      <li><a href="#button">STEP 5：Slackにボタンを投稿する</a></li>
+      <li><a href="#test">STEP 6：動作テスト</a></li>
+      <li><a href="#trouble">困ったときは</a></li>
+    </ol>
+  </div>
+
+  <!-- OVERVIEW -->
+  <h2 id="overview">全体の仕組み</h2>
+
+  <div class="flow">
+    <div class="flow-box">① Slackの<br>ボタンを押す</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">② Slack が<br>GASへ通知</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">③ GASが<br>スプレッドシートを確認</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">④ 次の担当者を<br>メンション投稿</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">⑤ 番号を<br>+1して保存</div>
+  </div>
+
+  <table>
+    <tr><th>使うサービス</th><th>役割</th><th>費用</th></tr>
+    <tr><td>Slack（無料プランでも可）</td><td>ボタンの表示・メンションの投稿</td><td>無料</td></tr>
+    <tr><td>Googleスプレッドシート</td><td>「今何番目か」を記録しておく</td><td>無料</td></tr>
+    <tr><td>Google Apps Script（GAS）</td><td>処理の中心。ボタンを受け取り動かす</td><td>無料</td></tr>
+  </table>
+
+  <div class="note"><strong>補足：</strong>GAS（Google Apps Script）とは、Googleが無料で提供しているプログラム実行環境です。Googleアカウントがあれば誰でも使えます。サーバーを借りる必要はありません。</div>
+
+  <!-- PREPARE -->
+  <h2 id="prepare">事前に準備するもの</h2>
+
+  <div class="step">
+    <span class="step-number">✓</span><span class="step-title">Googleアカウント</span>
+    <p style="margin-top:8px;">スプレッドシートとGASを使うために必要です。すでに持っていればOKです。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">✓</span><span class="step-title">メンション対象4人のSlack ユーザーID</span>
+    <p style="margin-top:8px;">メンションには <code>@名前</code> ではなく <strong>ユーザーID（Uから始まる文字列）</strong> が必要です。</p>
+    <h3>ユーザーIDの調べ方</h3>
+    <ol>
+      <li>Slackでメンションしたい人のプロフィールを開く</li>
+      <li>「…」（その他）→「プロフィールをコピー」または「メンバーIDをコピー」をクリック</li>
+      <li><code>U0123456789</code> のような文字列がコピーされます</li>
+    </ol>
+    <div class="note"><strong>メモしておきましょう：</strong>4人分のユーザーIDを事前にメモ帳などに控えておくとスムーズです。</div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">✓</span><span class="step-title">ボタンを設置するSlackチャンネルのID</span>
+    <p style="margin-top:8px;">チャンネル名ではなくIDが必要です。</p>
+    <h3>チャンネルIDの調べ方</h3>
+    <ol>
+      <li>Slackでボタンを置きたいチャンネルを開く</li>
+      <li>チャンネル名をクリック →「チャンネル詳細を開く」</li>
+      <li>一番下に <code>C0123456789</code> のような文字列があります</li>
+    </ol>
+  </div>
+
+  <!-- STEP 1 -->
+  <h2 id="sheet">STEP 1：Googleスプレッドシートを作る</h2>
+
+  <div class="step">
+    <span class="step-number">1</span><span class="step-title">スプレッドシートを新規作成する</span>
+    <p style="margin-top:8px;"><a href="https://sheets.google.com" target="_blank">https://sheets.google.com</a> を開き、「＋ 新しいスプレッドシート」をクリックします。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span><span class="step-title">シート名を変更する</span>
+    <p style="margin-top:8px;">画面下部のタブ「Sheet1」を右クリック →「名前を変更」→ <code>State</code> と入力してEnter。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span><span class="step-title">A1セルに「0」を入力する</span>
+    <p style="margin-top:8px;">A1セルをクリックして <code>0</code> と入力しEnter。これが「今何番目か」を記録するセルです。</p>
+    <div class="note"><strong>意味：</strong>0=Aさんの番、1=Bさんの番、2=Cさんの番、3=Dさんの番 を表します。</div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">4</span><span class="step-title">スプレッドシートのIDをメモする</span>
+    <p style="margin-top:8px;">ブラウザのURLを見てください。</p>
+    <pre>https://docs.google.com/spreadsheets/d/<span style="background:#f5c518;color:#000;padding:0 4px;">ここがスプレッドシートID</span>/edit</pre>
+    <p>ハイライト部分（長い文字列）をコピーしてメモしておきます。</p>
+  </div>
+
+  <!-- STEP 2 -->
+  <h2 id="gas">STEP 2：Google Apps Script を書く</h2>
+
+  <div class="step">
+    <span class="step-number">1</span><span class="step-title">GASのエディタを開く</span>
+    <p style="margin-top:8px;">スプレッドシートのメニューから「拡張機能」→「Apps Script」をクリックします。</p>
+    <p>新しいタブでエディタが開きます。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span><span class="step-title">既存のコードを全部消す</span>
+    <p style="margin-top:8px;">最初から書いてある <code>function myFunction() {}</code> を全て選択して削除します。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span><span class="step-title">以下のコードをそのまま貼り付ける</span>
+    <p style="margin-top:8px;"><strong>★ 赤字のコメント箇所を自分の情報に書き換えてください。</strong></p>
+<pre><span class="comment">// ===== ここを書き換えてください =====</span>
+<span class="keyword">const</span> SHEET_ID = <span class="string">'スプレッドシートのIDをここに貼る'</span>;
+<span class="keyword">const</span> CHANNEL_ID = <span class="string">'SlackチャンネルのIDをここに貼る'</span>;
+
+<span class="keyword">const</span> MEMBERS = [
+  { name: <span class="string">'Aさん'</span>, id: <span class="string">'AさんのSlackユーザーID'</span> },
+  { name: <span class="string">'Bさん'</span>, id: <span class="string">'BさんのSlackユーザーID'</span> },
+  { name: <span class="string">'Cさん'</span>, id: <span class="string">'CさんのSlackユーザーID'</span> },
+  { name: <span class="string">'Dさん'</span>, id: <span class="string">'DさんのSlackユーザーID'</span> },
+];
+<span class="comment">// ===================================</span>
+
+<span class="keyword">function</span> getSlackToken() {
+  <span class="keyword">return</span> PropertiesService.getScriptProperties().getProperty(<span class="string">'SLACK_TOKEN'</span>);
+}
+
+<span class="keyword">function</span> doPost(e) {
+  <span class="keyword">var</span> body = e.postData.contents;
+
+  <span class="comment">// Slackの認証チェック（URLの確認用）</span>
+  <span class="keyword">try</span> {
+    <span class="keyword">var</span> json = JSON.parse(body);
+    <span class="keyword">if</span> (json.type === <span class="string">'url_verification'</span>) {
+      <span class="keyword">return</span> ContentService.createTextOutput(json.challenge)
+        .setMimeType(ContentService.MimeType.TEXT);
+    }
+  } <span class="keyword">catch</span>(e) {}
+
+  <span class="comment">// ボタンが押されたときの処理</span>
+  <span class="keyword">var</span> decoded = decodeURIComponent(body.replace(<span class="string">'payload='</span>, <span class="string">''</span>));
+  <span class="keyword">var</span> payload = JSON.parse(decoded);
+
+  <span class="keyword">if</span> (payload.type === <span class="string">'block_actions'</span>) {
+    <span class="keyword">var</span> lock = LockService.getScriptLock();
+    lock.tryLock(5000);
+
+    <span class="keyword">var</span> sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(<span class="string">'State'</span>);
+    <span class="keyword">var</span> idx = Number(sheet.getRange(<span class="string">'A1'</span>).getValue());
+    <span class="keyword">var</span> member = MEMBERS[idx];
+
+    UrlFetchApp.fetch(<span class="string">'https://slack.com/api/chat.postMessage'</span>, {
+      method: <span class="string">'post'</span>,
+      contentType: <span class="string">'application/json'</span>,
+      headers: { <span class="string">'Authorization'</span>: <span class="string">'Bearer '</span> + getSlackToken() },
+      payload: JSON.stringify({
+        channel: CHANNEL_ID,
+        text: <span class="string">'&lt;@'</span> + member.id + <span class="string">'&gt; 担当です！'</span>,
+      }),
+    });
+
+    sheet.getRange(<span class="string">'A1'</span>).setValue((idx + <span class="string">1</span>) % MEMBERS.length);
+    lock.releaseLock();
+  }
+
+  <span class="keyword">return</span> ContentService.createTextOutput(<span class="string">'OK'</span>);
+}
+
+<span class="keyword">function</span> postInitialButton() {
+  UrlFetchApp.fetch(<span class="string">'https://slack.com/api/chat.postMessage'</span>, {
+    method: <span class="string">'post'</span>,
+    contentType: <span class="string">'application/json'</span>,
+    headers: { <span class="string">'Authorization'</span>: <span class="string">'Bearer '</span> + getSlackToken() },
+    payload: JSON.stringify({
+      channel: CHANNEL_ID,
+      text: <span class="string">'担当者メンションボタン'</span>,
+      blocks: [{
+        type: <span class="string">'actions'</span>,
+        elements: [{
+          type: <span class="string">'button'</span>,
+          text: { type: <span class="string">'plain_text'</span>, text: <span class="string">'次の担当者にメンション'</span> },
+          action_id: <span class="string">'mention_next'</span>,
+          style: <span class="string">'primary'</span>,
+        }],
+      }],
+    }),
+  });
+}</pre>
+  </div>
+
+  <div class="step">
+    <span class="step-number">4</span><span class="step-title">Slack Tokenをスクリプトに登録する</span>
+    <p style="margin-top:8px;">セキュリティのため、TokenはコードにではなくGASの「プロパティ」に保存します。</p>
+    <ol>
+      <li>GASエディタの左メニュー「プロジェクトの設定」（歯車アイコン）をクリック</li>
+      <li>「スクリプト プロパティ」セクションで「プロパティを追加」をクリック</li>
+      <li>プロパティ名：<code>SLACK_TOKEN</code>、値：後でSlack Appから取得するToken（<code>xoxb-</code>から始まる文字列）を入力</li>
+      <li>「スクリプトプロパティを保存」をクリック</li>
+    </ol>
+    <div class="warn"><strong>注意：</strong>Slack Tokenはパスワードと同じです。コードに直接書いたり、人に見せたりしないでください。</div>
+    <div class="note"><strong>Token取得タイミング：</strong>TokenはSTEP 4のSlack App作成後に取得します。先にGASを保存しておいて、Tokenは後から登録してもOKです。</div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">5</span><span class="step-title">保存する</span>
+    <p style="margin-top:8px;">Ctrl+S（MacはCmd+S）またはフロッピーアイコンをクリックして保存します。</p>
+  </div>
+
+  <!-- STEP 3 -->
+  <h2 id="deploy">STEP 3：GAS をウェブアプリとして公開する</h2>
+
+  <p>SlackからGASに通知を届けるため、GASをインターネット上に公開します。</p>
+
+  <div class="step">
+    <span class="step-number">1</span><span class="step-title">「デプロイ」をクリック</span>
+    <p style="margin-top:8px;">GASエディタ右上の青い「デプロイ」ボタン → 「新しいデプロイ」をクリックします。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span><span class="step-title">設定を行う</span>
+    <ol>
+      <li>「種類の選択」→ 歯車アイコン → 「ウェブアプリ」を選択</li>
+      <li>説明（任意）：例 <code>Slack Mention Workflow</code></li>
+      <li>「次のユーザーとして実行」→ <strong>自分（自分のメールアドレス）</strong></li>
+      <li>「アクセスできるユーザー」→ <strong>全員</strong></li>
+    </ol>
+    <div class="warn"><strong>「全員」にする理由：</strong>Slackからのリクエストには認証情報がないため、誰でもアクセス可能にする必要があります。セキュリティはSlackの署名検証で担保します。</div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span><span class="step-title">デプロイして権限を許可する</span>
+    <ol>
+      <li>「デプロイ」をクリック</li>
+      <li>「アクセスを承認」→ 自分のGoogleアカウントを選択</li>
+      <li>「このアプリはGoogleで確認されていません」と出たら「詳細」→「（プロジェクト名）に移動」をクリック</li>
+      <li>「許可」をクリック</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <span class="step-number">4</span><span class="step-title">ウェブアプリURLをメモする</span>
+    <p style="margin-top:8px;">「デプロイが更新されました」画面に表示されるURLをコピーしてメモします。</p>
+    <pre>https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxx/exec</pre>
+    <div class="note"><strong>このURLは後でSlack Appに設定します。</strong>大切に保管してください。</div>
+  </div>
+
+  <!-- STEP 4 -->
+  <h2 id="slack-app">STEP 4：Slack App を作成・設定する</h2>
+
+  <div class="step">
+    <span class="step-number">1</span><span class="step-title">Slack API ページにアクセス</span>
+    <p style="margin-top:8px;"><a href="https://api.slack.com/apps" target="_blank">https://api.slack.com/apps</a> を開きます。Slackにログインした状態でアクセスしてください。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span><span class="step-title">新しいAppを作成する</span>
+    <ol>
+      <li>「Create New App」をクリック</li>
+      <li>「From scratch」を選択</li>
+      <li>App Name：任意（例：<code>順番メンション</code>）</li>
+      <li>Workspace：使用するSlackのワークスペースを選択</li>
+      <li>「Create App」をクリック</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span><span class="step-title">権限（スコープ）を設定する</span>
+    <p style="margin-top:8px;">左メニュー「OAuth &amp; Permissions」をクリック。</p>
+    <p>「Scopes」セクションの「Bot Token Scopes」で「Add an OAuth Scope」をクリックし、以下を追加：</p>
+    <table>
+      <tr><th>スコープ名</th><th>用途</th></tr>
+      <tr><td><code>chat:write</code></td><td>メッセージ・メンションを投稿する</td></tr>
+    </table>
+  </div>
+
+  <div class="step">
+    <span class="step-number">4</span><span class="step-title">Appをワークスペースにインストールする</span>
+    <ol>
+      <li>同じ「OAuth &amp; Permissions」ページの上部「Install to Workspace」ボタンをクリック</li>
+      <li>「許可する」をクリック</li>
+      <li>「Bot User OAuth Token」（<code>xoxb-</code>で始まる）が表示されるのでコピーする</li>
+    </ol>
+    <div class="check"><strong>このTokenをGASのスクリプトプロパティ（SLACK_TOKEN）に登録してください。</strong>（STEP 2-4で空欄にしていた場合は今登録します）</div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">5</span><span class="step-title">Interactivity（ボタン操作の受信）を有効にする</span>
+    <p style="margin-top:8px;">左メニュー「Interactivity &amp; Shortcuts」をクリック。</p>
+    <ol>
+      <li>「Interactivity」トグルを <strong>ON</strong> にする</li>
+      <li>「Request URL」にSTEP 3でメモしたGASのURLを貼り付ける</li>
+      <li>右下「Save Changes」をクリック</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <span class="step-number">6</span><span class="step-title">BotをSlackチャンネルに招待する</span>
+    <p style="margin-top:8px;">Slackでボタンを置くチャンネルを開き、次のメッセージを送信します：</p>
+    <pre>/invite @順番メンション</pre>
+    <p>（作成したAppの名前に合わせて変えてください）</p>
+  </div>
+
+  <!-- STEP 5 -->
+  <h2 id="button">STEP 5：Slackにボタンを投稿する</h2>
+
+  <p>GASからボタンを含むメッセージをSlackに1回だけ投稿します。</p>
+
+  <div class="step">
+    <span class="step-number">1</span><span class="step-title">GASエディタで関数を実行する</span>
+    <ol>
+      <li>GASエディタを開く</li>
+      <li>画面上部の関数選択ドロップダウンで <code>postInitialButton</code> を選択</li>
+      <li>「▶ 実行」ボタンをクリック</li>
+    </ol>
+    <div class="note"><strong>初回のみ：</strong>権限の確認が出たら「許可」してください。</div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span><span class="step-title">Slackを確認する</span>
+    <p style="margin-top:8px;">指定したチャンネルに「次の担当者にメンション」というボタンが投稿されていれば成功です。</p>
+    <div class="check"><strong>ボタンはこの1回だけ投稿すればOKです。</strong>メッセージは削除しないようにしましょう。</div>
+  </div>
+
+  <!-- STEP 6 -->
+  <h2 id="test">STEP 6：動作テスト</h2>
+
+  <div class="step">
+    <span class="step-number">1</span><span class="step-title">ボタンを押してみる</span>
+    <p style="margin-top:8px;">Slackのボタンをクリックしてください。</p>
+    <ul>
+      <li>1回目：Aさんにメンションされる</li>
+      <li>2回目：Bさんにメンションされる</li>
+      <li>3回目：Cさんにメンションされる</li>
+      <li>4回目：Dさんにメンションされる</li>
+      <li>5回目：Aさんに戻る</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span><span class="step-title">スプレッドシートも確認する</span>
+    <p style="margin-top:8px;">A1セルの数字がボタンを押すたびに 0 → 1 → 2 → 3 → 0 … と変わっていれば正常です。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span><span class="step-title">担当者をリセットしたい場合</span>
+    <p style="margin-top:8px;">スプレッドシートのA1セルを <code>0</code> に書き換えるだけでAさんからリスタートできます。</p>
+  </div>
+
+  <!-- TROUBLE -->
+  <h2 id="trouble">困ったときは</h2>
+
+  <table>
+    <tr><th>症状</th><th>確認ポイント</th></tr>
+    <tr>
+      <td>ボタンを押しても何も起きない</td>
+      <td>
+        ・GASのRequest URLが正しく設定されているか<br>
+        ・GASが「全員」アクセス可能でデプロイされているか<br>
+        ・Bot TokenがGASのプロパティに登録されているか
+      </td>
+    </tr>
+    <tr>
+      <td>メンションが届かない</td>
+      <td>
+        ・BotがチャンネルにInviteされているか<br>
+        ・SlackユーザーIDが正しいか（Uから始まっているか）<br>
+        ・チャンネルIDが正しいか（Cから始まっているか）
+      </td>
+    </tr>
+    <tr>
+      <td>「not_in_channel」エラー</td>
+      <td>・<code>/invite @ボット名</code> でBotをチャンネルに招待する</td>
+    </tr>
+    <tr>
+      <td>「invalid_auth」エラー</td>
+      <td>・GASプロパティのSLACK_TOKENが正しく設定されているか確認</td>
+    </tr>
+    <tr>
+      <td>コードを変更したのに反映されない</td>
+      <td>・GASを変更したら「デプロイ」→「デプロイを管理」→「新しいバージョン」で再デプロイが必要</td>
+    </tr>
+    <tr>
+      <td>同じ人が連続でメンションされる</td>
+      <td>・スプレッドシートのA1セルが正しく更新されているか確認</td>
+    </tr>
+  </table>
+
+  <h3>GASのログを確認する方法</h3>
+  <p>エラーの原因を調べたいときは、GASエディタの左メニュー「実行数」をクリックすると処理の記録が見られます。</p>
+
+  <div class="note">
+    <strong>担当者の人数を変えたい場合：</strong>GASコードの <code>MEMBERS</code> 配列に追加・削除するだけでOKです。変更後は必ず再デプロイしてください。
+  </div>
+
+  <footer>
+    <p>作成：2026年6月 ／ Slack × Google Apps Script ワークフロー手順書</p>
+  </footer>
+
+</div>
+</body>
+</html>
